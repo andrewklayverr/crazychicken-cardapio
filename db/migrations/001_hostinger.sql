@@ -116,8 +116,8 @@ INSERT IGNORE INTO categories (id, name, slug, sort_order, active) VALUES
   (4, 'Novidades', 'novidades', 4, 1),
   (5, 'Bebidas', 'bebidas', 5, 1);
 
-INSERT IGNORE INTO store_settings (id, brand_name, address, opening_hours, delivery_enabled, pickup_enabled, minimum_order_cents, default_delivery_fee_cents, theme, appearance_json) VALUES
-  (1, 'Crazy Chicken', 'Rua 7 de Setembro, 247 · Suzano', '18h às 23h', 1, 1, 0, 0, 'cartaz-amarelo', '{"heroTitle":"Hoje é dia de frango!","heroDescription":"Seu balde favorito, crocante e quentinho, está a um clique.","accent":"#ffc21b","primary":"#e32120","background":"#fff8e9","fontScale":"normal","density":"comfortable","visibleSections":["destaques","bebidas","cardapio","sobre"]}');
+INSERT IGNORE INTO store_settings (id, brand_name, logo_key, address, opening_hours, delivery_enabled, pickup_enabled, minimum_order_cents, default_delivery_fee_cents, theme, appearance_json) VALUES
+  (1, 'Crazy Chicken', '/logo-frango.png', 'Rua 7 de Setembro, 247 · Suzano', '18h às 23h', 1, 1, 0, 0, 'cartaz-amarelo', '{"heroTitle":"Hoje é dia de frango!","heroDescription":"Seu balde favorito, crocante e quentinho, está a um clique.","accent":"#ffc21b","primary":"#e32120","background":"#fff8e9","fontScale":"normal","density":"comfortable","visibleSections":["destaques","bebidas","cardapio","sobre"]}');
 
 INSERT IGNORE INTO products (id, category_id, name, description, price_cents, image_key, badge, available, featured, sort_order) VALUES
   (1, 1, 'Balde 500 g', 'Frango crocante, sequinho e cheio de sabor.', 4999, 'hero-food.jpeg', 'Mais pedido', 1, 1, 1),
