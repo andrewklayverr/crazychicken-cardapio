@@ -128,7 +128,7 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
           onProductsChange(mapped);
         }
         const incomingSettings = settingsData?.settings;
-        if (incomingSettings) setAdminSettings((current) => ({ ...current, ...incomingSettings, appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } }));
+        if (incomingSettings) setAdminSettings((current) => ({ ...current, ...incomingSettings, whatsappNumber: incomingSettings.whatsappNumber ?? "", appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } }));
         if (ordersData?.orders) setOrders(ordersData.orders);
       })
       .catch(() => notify("Não foi possível carregar os dados mais recentes."));
@@ -196,7 +196,7 @@ export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
-  useEffect(() => { const saved = window.localStorage.getItem("crazy-chicken-cart"); if (saved) { try { setCart(JSON.parse(saved)); } catch { window.localStorage.removeItem("crazy-chicken-cart"); } } fetch("/api/storefront").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { priceCents: number; category: string }>; settings?: Partial<StoreSettings> }> : null).then((data) => { if (!data) return; if (Array.isArray(data.products)) setProducts(data.products.map(mapApiProduct)); const incomingSettings = data.settings; if (incomingSettings) setSettings((current) => ({ ...current, ...incomingSettings, appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } })); }).catch(() => undefined); }, []);
+  useEffect(() => { const saved = window.localStorage.getItem("crazy-chicken-cart"); if (saved) { try { setCart(JSON.parse(saved)); } catch { window.localStorage.removeItem("crazy-chicken-cart"); } } fetch("/api/storefront").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { priceCents: number; category: string }>; settings?: Partial<StoreSettings> }> : null).then((data) => { if (!data) return; if (Array.isArray(data.products)) setProducts(data.products.map(mapApiProduct)); const incomingSettings = data.settings; if (incomingSettings) setSettings((current) => ({ ...current, ...incomingSettings, whatsappNumber: incomingSettings.whatsappNumber ?? "", appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } })); }).catch(() => undefined); }, []);
   useEffect(() => { window.localStorage.setItem("crazy-chicken-cart", JSON.stringify(cart)); }, [cart]);
   const addToCart = (product: Product, selectedOptions: ProductOption[] = []) => setCart((items) => { const key = selectedOptions.map((option) => option.id).sort().join(","); const existing = items.find((item) => item.id === product.id && (item.selectedOptions ?? []).map((option) => option.id).sort().join(",") === key); return existing ? items.map((item) => item === existing ? { ...item, quantity: item.quantity + 1 } : item) : [...items, { ...product, quantity: 1, selectedOptions }]; });
   const changeQuantity = (id: number, delta: number) => setCart((items) => items.map((item) => item.id === id ? { ...item, quantity: item.quantity + delta } : item).filter((item) => item.quantity > 0));

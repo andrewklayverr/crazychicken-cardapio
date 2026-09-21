@@ -46,7 +46,7 @@ export async function getStorefront() {
     return {
       categories: categoryRows,
       products: mappedProducts,
-      settings: setting ? { ...fallbackSettings, ...setting, appearance: parseAppearance(setting.appearanceJson) } : fallbackSettings,
+      settings: setting ? { ...fallbackSettings, ...setting, whatsappNumber: setting.whatsappNumber ?? "", logoKey: setting.logoKey ?? null, appearance: parseAppearance(setting.appearanceJson) } : fallbackSettings,
     };
   } catch {
     return { categories: fallbackCategories, products: fallbackProducts, settings: fallbackSettings };
