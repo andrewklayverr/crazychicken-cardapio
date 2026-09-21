@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { categories, productOptions, products } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
+import { validateAdminMutation } from "../../../../lib/auth";
 import { centsFromValue } from "../../../../lib/store";
 
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireAdmin();
+    const user = await requireAdmin(["owner", "manager"]); await validateAdminMutation(request);
     const body = await request.json() as Record<string, unknown>;
     const name = String(body.name ?? "").trim();
     const categoryId = Number(body.categoryId);
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const user = await requireAdmin();
+    const user = await requireAdmin(["owner", "manager"]); await validateAdminMutation(request);
     const body = await request.json() as Record<string, unknown>;
     const id = Number(body.id);
     if (!Number.isInteger(id)) return Response.json({ error: "Produto inválido." }, { status: 400 });
@@ -48,7 +49,7 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const user = await requireAdmin();
+    const user = await requireAdmin(["owner", "manager"]); await validateAdminMutation(request);
     const id = Number(new URL(request.url).searchParams.get("id"));
     if (!Number.isInteger(id)) return Response.json({ error: "Produto inválido." }, { status: 400 });
     const db = getDb();

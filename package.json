@@ -14,7 +14,9 @@
     "db:generate": "drizzle-kit generate --dialect=mysql",
     "db:migrate": "node scripts/migrate-hostinger.mjs",
     "db:backup": "node scripts/backup-hostinger.mjs",
-    "auth:hash": "node scripts/hash-admin-password.mjs"
+    "auth:hash": "node scripts/hash-admin-password.mjs",
+    "admin:bootstrap": "node scripts/bootstrap-admin.mjs",
+    "admin:migrate-legacy": "node scripts/migrate-legacy-admin.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

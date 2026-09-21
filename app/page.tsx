@@ -31,6 +31,12 @@ const initialProducts: Product[] = [
 
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+function adminFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const cookie = typeof document !== "undefined" ? document.cookie.split("; ").find((item) => item.startsWith("crazy_chicken_csrf=")) : undefined;
+  const csrf = cookie?.slice("crazy_chicken_csrf=".length);
+  return fetch(input, { ...init, headers: { ...(init.headers as Record<string, string> | undefined), ...(csrf ? { "X-CSRF-Token": decodeURIComponent(csrf) } : {}) } });
+}
+
 function BrandMark({ compact = false, logoKey }: { compact?: boolean; logoKey?: string | null }) {
   const resolvedLogoKey = logoKey ?? (typeof document !== "undefined" ? document.documentElement.dataset.logoKey : undefined) ?? "/logo-frango.png";
   const logo = resolvedLogoKey ? (resolvedLogoKey.startsWith("/") || resolvedLogoKey.includes(".") && !resolvedLogoKey.includes("/") ? `/${resolvedLogoKey.replace(/^\//, "")}` : `/api/media?key=${encodeURIComponent(resolvedLogoKey)}`) : null;
@@ -93,6 +99,8 @@ function CartDrawer({ cart, settings, onClose, onChangeQuantity, onRemove }: { c
 }
 
 type AdminOrder = { id: number; code: string; status: string; fulfillmentType: string; customerName: string; customerPhone: string; subtotalCents: number; deliveryFeeCents: number; totalCents: number; createdAt: string };
+type AdminUserView = { id: number; email: string; name: string; role: string; status: string; mfaEnabledAt?: string | null; lastLoginAt?: string | null };
+type CurrentAdmin = { id: number; email: string; displayName: string; role: "owner" | "manager" | "attendant"; mfaEnabledAt: string | null };
 
 const themePresets = [
   { id: "cartaz-amarelo", label: "Cartaz amarelo", accent: "#ffc21b", primary: "#e32120", background: "#fff8e9" },
@@ -102,8 +110,8 @@ const themePresets = [
 
 const statusLabels: Record<string, string> = { received: "Recebido", confirmed: "Confirmado", preparing: "Em preparo", ready: "Pronto", out_for_delivery: "Saiu para entrega", completed: "Finalizado", cancelled: "Cancelado" };
 
-export function AdminPanel({ products, onBack, onProductsChange = () => undefined }: { products: Product[]; onBack?: () => void; onProductsChange?: (products: Product[]) => void }) {
-  const [section, setSection] = useState<"visao" | "pedidos" | "produtos" | "aparencia" | "configuracoes">("visao");
+export function AdminPanel({ products, currentUser, onBack, onProductsChange = () => undefined }: { products: Product[]; currentUser: CurrentAdmin; onBack?: () => void; onProductsChange?: (products: Product[]) => void }) {
+  const [section, setSection] = useState<"visao" | "pedidos" | "produtos" | "aparencia" | "configuracoes" | "equipe">("visao");
   const [editing, setEditing] = useState<Product | null>(null);
   const [catalog, setCatalog] = useState(products);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -111,6 +119,12 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
   const [adminSettings, setAdminSettings] = useState(defaultStoreSettings);
   const [notice, setNotice] = useState("");
   const [orderFilter, setOrderFilter] = useState("all");
+  const [team, setTeam] = useState<AdminUserView[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("attendant");
+  const [mfaSecret, setMfaSecret] = useState("");
+  const [mfaUri, setMfaUri] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const goBack = onBack ?? (() => { window.location.href = "/"; });
   const notify = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2800); };
 
@@ -120,8 +134,8 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
   }, [products]);
 
   useEffect(() => {
-    Promise.all([fetch("/api/admin/products").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { categoryId: number; priceCents: number; imageKey?: string | null }>; categories?: Array<{ id: number; name: string }> }> : null), fetch("/api/admin/settings").then((response) => response.ok ? response.json() as Promise<{ settings?: Partial<StoreSettings> }> : null), fetch("/api/admin/orders").then((response) => response.ok ? response.json() as Promise<{ orders?: AdminOrder[] }> : null)])
-      .then(([catalogData, settingsData, ordersData]) => {
+    Promise.all([adminFetch("/api/admin/products").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { categoryId: number; priceCents: number; imageKey?: string | null }>; categories?: Array<{ id: number; name: string }> }> : null), adminFetch("/api/admin/settings").then((response) => response.ok ? response.json() as Promise<{ settings?: Partial<StoreSettings> }> : null), adminFetch("/api/admin/orders").then((response) => response.ok ? response.json() as Promise<{ orders?: AdminOrder[] }> : null), currentUser.role === "owner" ? adminFetch("/api/admin/users").then((response) => response.ok ? response.json() as Promise<{ users?: AdminUserView[] }> : null) : Promise.resolve(null)])
+      .then(([catalogData, settingsData, ordersData, usersData]) => {
         if (catalogData?.products) {
           const categoryRows = catalogData.categories ?? [];
           setCategories(categoryRows);
@@ -133,14 +147,17 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
         const incomingSettings = settingsData?.settings;
         if (incomingSettings) setAdminSettings((current) => ({ ...current, ...incomingSettings, whatsappNumber: incomingSettings.whatsappNumber ?? "", appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } }));
         if (ordersData?.orders) setOrders(ordersData.orders);
+        if (usersData?.users) setTeam(usersData.users);
       })
       .catch(() => notify("Não foi possível carregar os dados mais recentes."));
   }, [onProductsChange]);
 
+  useEffect(() => { if (section === "equipe") window.location.href = "/admin/equipe"; }, [section]);
+
   const categoryIdFor = (name: string) => categories.find((category) => category.name === name)?.id ?? ({ Frangos: 1, Acompanhamentos: 2, Molhos: 3, Novidades: 4, Bebidas: 5 }[name] ?? 1);
   const saveProduct = async (product: Product) => {
     const payload = { id: product.id, name: product.name, description: product.description, priceCents: Math.round(product.price * 100), categoryId: categoryIdFor(product.category), imageKey: product.imageKey ?? undefined, available: product.available !== false, featured: product.featured === true, badge: product.badge ?? null };
-    const response = await fetch("/api/admin/products", { method: product.id === 0 ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const response = await adminFetch("/api/admin/products", { method: product.id === 0 ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     if (!response.ok) { notify("Não foi possível salvar o produto."); return; }
     const data = await response.json() as { product: Product & { categoryId: number; priceCents: number; imageKey?: string | null } };
     const saved = mapApiProduct({ ...data.product, category: product.category });
@@ -149,28 +166,32 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
   };
   const deleteProduct = async (id: number) => {
     if (!window.confirm("Excluir este produto do cardápio? Essa ação não pode ser desfeita.")) return;
-    const response = await fetch(`/api/admin/products?id=${id}`, { method: "DELETE" });
+    const response = await adminFetch(`/api/admin/products?id=${id}`, { method: "DELETE" });
     if (!response.ok) { notify("Não foi possível excluir o produto."); return; }
     const next = catalog.filter((product) => product.id !== id); setCatalog(next); onProductsChange(next); notify("Produto removido.");
   };
   const saveSettings = async (patch: Partial<StoreSettings>) => {
     const next = { ...adminSettings, ...patch, appearance: { ...adminSettings.appearance, ...(patch.appearance ?? {}) } };
-    const response = await fetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...next, appearance: next.appearance }) });
+    const response = await adminFetch("/api/admin/settings", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...next, appearance: next.appearance }) });
     if (!response.ok) { notify("Não foi possível salvar as configurações."); return; }
     setAdminSettings(next); notify("Configurações publicadas.");
   };
   const updateOrderStatus = async (id: number, status: string) => {
-    const response = await fetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
+    const response = await adminFetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
     if (!response.ok) { notify("Não foi possível atualizar o status."); return; }
     const data = await response.json() as { order: AdminOrder }; setOrders((current) => current.map((order) => order.id === id ? data.order : order)); notify("Status do pedido atualizado.");
   };
-  const upload = async (file: File) => { const body = new FormData(); body.append("file", file); const response = await fetch("/api/admin/uploads", { method: "POST", body }); if (!response.ok) throw new Error("upload"); const data = await response.json() as { key: string }; return data.key; };
+  const upload = async (file: File) => { const body = new FormData(); body.append("file", file); const response = await adminFetch("/api/admin/uploads", { method: "POST", body }); if (!response.ok) throw new Error("upload"); const data = await response.json() as { key: string }; return data.key; };
+  const inviteUser = async () => { const response = await adminFetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: inviteEmail, role: inviteRole }) }); if (!response.ok) { notify("Não foi possível enviar o convite."); return; } setInviteEmail(""); notify("Convite enviado por e-mail."); const fresh = await adminFetch("/api/admin/users"); if (fresh.ok) setTeam((await fresh.json() as { users: AdminUserView[] }).users); };
+  const updateUser = async (user: AdminUserView, patch: { role?: string; status?: string }) => { const response = await adminFetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: user.id, ...patch }) }); if (!response.ok) { notify("Não foi possível atualizar a conta."); return; } setTeam((current) => current.map((item) => item.id === user.id ? { ...item, ...patch } : item)); notify("Acesso atualizado."); };
+  const startMfaSetup = async () => { const response = await adminFetch("/api/admin/mfa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "setup" }) }); if (!response.ok) { notify("Não foi possível iniciar o MFA."); return; } const data = await response.json() as { secret: string; uri: string }; setMfaSecret(data.secret); setMfaUri(data.uri); };
+  const enableMfa = async () => { const response = await adminFetch("/api/admin/mfa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "enable", secret: mfaSecret, code: mfaCode }) }); if (!response.ok) { notify("Código MFA inválido."); return; } notify("MFA ativado. Guarde os códigos de recuperação enviados na tela."); setMfaSecret(""); setMfaUri(""); setMfaCode(""); };
   const visibleOrders = orderFilter === "all" ? orders : orders.filter((order) => order.status === orderFilter);
   const revenue = orders.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + order.totalCents, 0);
   const stats = [{ label: "Pedidos hoje", value: String(orders.length), change: "ao vivo" }, { label: "Faturamento", value: money(revenue / 100), change: "pedidos registrados" }, { label: "Ticket médio", value: money(orders.length ? revenue / 100 / orders.length : 0), change: "média atual" }];
   const renderOrderRows = (rows: AdminOrder[]) => rows.length ? rows.map((order) => <div className="order-row" key={order.id}><strong>{order.code}</strong><span>{order.customerName}</span><span>{money(order.totalCents / 100)}</span><select value={order.status} onChange={(event) => updateOrderStatus(order.id, event.target.value)} aria-label={`Status do pedido ${order.code}`}>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>) : <div className="admin-empty">Ainda não há pedidos registrados.</div>;
-  const navItems: Array<[typeof section, typeof LayoutDashboard, string]> = [["visao", LayoutDashboard, "Visão geral"], ["pedidos", ShoppingBag, "Pedidos"], ["produtos", Package, "Produtos"], ["aparencia", SlidersHorizontal, "Aparência"], ["configuracoes", Settings2, "Configurações"]];
-  const pageTitle = section === "visao" ? "Bom dia, admin." : section === "produtos" ? "Produtos" : section === "pedidos" ? "Pedidos" : section === "aparencia" ? "Aparência" : "Configurações";
+  const navItems: Array<[typeof section, typeof LayoutDashboard, string]> = [["visao", LayoutDashboard, "Visão geral"], ["pedidos", ShoppingBag, "Pedidos"], ["produtos", Package, "Produtos"], ["aparencia", SlidersHorizontal, "Aparência"], ["configuracoes", Settings2, "Configurações"], ...(currentUser.role === "owner" ? [["equipe", Settings2, "Equipe e acessos"] as [typeof section, typeof Settings2, string]] : [])];
+  const pageTitle = section === "visao" ? `Bom dia, ${currentUser.displayName}.` : section === "produtos" ? "Produtos" : section === "pedidos" ? "Pedidos" : section === "aparencia" ? "Aparência" : section === "equipe" ? "Equipe e acessos" : "Configurações";
   return <div className="admin-shell"><aside className="admin-sidebar"><div className="admin-sidebar__top"><BrandMark /><span className="admin-tag">painel do admin</span></div><nav className="admin-nav">{navItems.map(([key, Icon, label]) => <button key={key} className={section === key ? "active" : ""} onClick={() => setSection(key)}><Icon size={18} />{label}{key === "pedidos" && orders.length > 0 && <span className="admin-nav__count">{orders.length}</span>}</button>)}</nav><button className="admin-back" onClick={goBack}><Eye size={17} /> Ver loja</button><div className="admin-user"><div className="admin-avatar">CC</div><span><strong>Administrador</strong><small>acesso protegido</small></span><ChevronRight size={15} /></div></aside><main className="admin-main"><header className="admin-header"><div><span className="eyebrow">Operação Crazy Chicken</span><h1>{pageTitle}</h1></div><div className="admin-header__actions"><button className="icon-button" aria-label="Notificações"><Bell size={19} /></button><button className="admin-store-link" onClick={goBack}>Abrir loja <ArrowRight size={16} /></button></div></header>{notice && <div className="admin-notice"><Check size={17} /> {notice}</div>}
     {section === "visao" && <><div className="stats-grid">{stats.map((stat) => <div className="stat-card" key={stat.label}><span>{stat.label}</span><strong>{stat.value}</strong><small>{stat.change}</small></div>)}</div><div className="admin-columns"><section className="admin-card"><div className="admin-card__heading"><div><span className="eyebrow">Acompanhe de perto</span><h2>Pedidos recentes</h2></div><button className="text-button" onClick={() => setSection("pedidos")}>Ver todos <ArrowRight size={15} /></button></div><div className="order-table"><div className="order-row order-row--head"><span>Pedido</span><span>Cliente</span><span>Total</span><span>Status</span></div>{renderOrderRows(orders.slice(0, 5))}</div></section><section className="admin-card admin-card--dark"><div className="admin-card__heading"><div><span className="eyebrow eyebrow--light">Atalho rápido</span><h2>Atualize o que aparece na loja.</h2></div><Pencil size={20} /></div><p>Edite produtos, preços, fotos, bebidas e a mensagem de destaque sem sair do painel.</p><button className="dark-card-button" onClick={() => setSection("aparencia")}>Editar aparência <ArrowRight size={16} /></button></section></div></>}
     {section === "pedidos" && <section className="admin-card page-card"><div className="admin-card__heading"><div><span className="eyebrow">Operação</span><h2>Todos os pedidos</h2></div><select className="filter-button" value={orderFilter} onChange={(event) => setOrderFilter(event.target.value)}><option value="all">Todos os status</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div><div className="order-table order-table--full"><div className="order-row order-row--head"><span>Pedido</span><span>Cliente</span><span>Total</span><span>Status</span></div>{renderOrderRows(visibleOrders)}</div></section>}

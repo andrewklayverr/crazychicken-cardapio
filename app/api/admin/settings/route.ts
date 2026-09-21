@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { storeSettings } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
+import { validateAdminMutation } from "../../../../lib/auth";
 import { parseAppearance } from "../../../../lib/store";
 
 export async function GET() {
@@ -10,7 +11,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const user = await requireAdmin();
+    const user = await requireAdmin(["owner", "manager"]); await validateAdminMutation(request);
     const body = await request.json() as Record<string, unknown>;
     const appearance = body.appearance && typeof body.appearance === "object" ? JSON.stringify(body.appearance) : undefined;
     const db = getDb();

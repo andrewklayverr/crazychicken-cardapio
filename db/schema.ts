@@ -94,6 +94,59 @@ export const adminAllowlist = mysqlTable("admin_allowlist", {
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
 });
 
+export const adminUsers = mysqlTable("admin_users", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 190 }).notNull().unique(),
+  name: varchar("name", { length: 120 }).notNull(),
+  role: varchar("role", { length: 20 }).notNull().default("attendant"),
+  status: varchar("status", { length: 20 }).notNull().default("invited"),
+  passwordHash: text("password_hash"),
+  mfaSecretEncrypted: text("mfa_secret_encrypted"),
+  mfaEnabledAt: timestamp("mfa_enabled_at", { mode: "string" }),
+  failedLoginCount: int("failed_login_count").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { mode: "string" }),
+  lastLoginAt: timestamp("last_login_at", { mode: "string" }),
+  createdBy: int("created_by"),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const adminSessions = mysqlTable("admin_sessions", {
+  tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+  userId: int("user_id").notNull(),
+  csrfTokenHash: varchar("csrf_token_hash", { length: 64 }).notNull(),
+  expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
+  idleExpiresAt: timestamp("idle_expires_at", { mode: "string" }).notNull(),
+  lastSeenAt: timestamp("last_seen_at", { mode: "string" }).defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const adminTokens = mysqlTable("admin_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  type: varchar("type", { length: 30 }).notNull(),
+  tokenHash: varchar("token_hash", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { mode: "string" }).notNull(),
+  usedAt: timestamp("used_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const adminRecoveryCodes = mysqlTable("admin_recovery_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  codeHash: varchar("code_hash", { length: 64 }).notNull().unique(),
+  usedAt: timestamp("used_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const adminLoginThrottles = mysqlTable("admin_login_throttles", {
+  keyHash: varchar("key_hash", { length: 64 }).primaryKey(),
+  attempts: int("attempts").notNull().default(0),
+  windowStartedAt: timestamp("window_started_at", { mode: "string" }).notNull(),
+  blockedUntil: timestamp("blocked_until", { mode: "string" }),
+});
+
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),
   actorUserId: varchar("actor_user_id", { length: 190 }).notNull(),
