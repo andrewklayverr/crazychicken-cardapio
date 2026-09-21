@@ -31,8 +31,10 @@ const initialProducts: Product[] = [
 
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-function BrandMark({ compact = false }: { compact?: boolean }) {
-  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}><div className="brand-mark__icon">🐔</div>{!compact && <div className="brand-mark__copy"><strong>Crazy</strong><span>Chicken</span></div>}</div>;
+function BrandMark({ compact = false, logoKey }: { compact?: boolean; logoKey?: string | null }) {
+  const resolvedLogoKey = logoKey ?? (typeof document !== "undefined" ? document.documentElement.dataset.logoKey : undefined);
+  const logo = resolvedLogoKey ? (resolvedLogoKey.startsWith("/") || resolvedLogoKey.includes(".") && !resolvedLogoKey.includes("/") ? `/${resolvedLogoKey.replace(/^\//, "")}` : `/api/media?key=${encodeURIComponent(resolvedLogoKey)}`) : null;
+  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}>{logo ? <img className="brand-mark__image" src={logo} alt="Crazy Chicken" /> : <div className="brand-mark__icon">🐔</div>}{!compact && <div className="brand-mark__copy"><strong>Crazy</strong><span>Chicken</span></div>}</div>;
 }
 
 function PillButton({ children, active = false, onClick }: { children: React.ReactNode; active?: boolean; onClick: () => void }) {
@@ -198,6 +200,7 @@ export default function Home() {
   const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
   useEffect(() => { const saved = window.localStorage.getItem("crazy-chicken-cart"); if (saved) { try { setCart(JSON.parse(saved)); } catch { window.localStorage.removeItem("crazy-chicken-cart"); } } fetch("/api/storefront").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { priceCents: number; category: string }>; settings?: Partial<StoreSettings> }> : null).then((data) => { if (!data) return; if (Array.isArray(data.products)) setProducts(data.products.map(mapApiProduct)); const incomingSettings = data.settings; if (incomingSettings) setSettings((current) => ({ ...current, ...incomingSettings, whatsappNumber: incomingSettings.whatsappNumber ?? "", appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } })); }).catch(() => undefined); }, []);
   useEffect(() => { window.localStorage.setItem("crazy-chicken-cart", JSON.stringify(cart)); }, [cart]);
+  useEffect(() => { const root = document.documentElement; if (settings.logoKey) root.dataset.logoKey = settings.logoKey; else delete root.dataset.logoKey; root.style.setProperty("--yellow", settings.appearance.accent); root.style.setProperty("--red", settings.appearance.primary); root.style.setProperty("--cream", settings.appearance.background); }, [settings]);
   const addToCart = (product: Product, selectedOptions: ProductOption[] = []) => setCart((items) => { const key = selectedOptions.map((option) => option.id).sort().join(","); const existing = items.find((item) => item.id === product.id && (item.selectedOptions ?? []).map((option) => option.id).sort().join(",") === key); return existing ? items.map((item) => item === existing ? { ...item, quantity: item.quantity + 1 } : item) : [...items, { ...product, quantity: 1, selectedOptions }]; });
   const changeQuantity = (id: number, delta: number) => setCart((items) => items.map((item) => item.id === id ? { ...item, quantity: item.quantity + delta } : item).filter((item) => item.quantity > 0));
   const removeFromCart = (id: number) => setCart((items) => items.filter((item) => item.id !== id));
