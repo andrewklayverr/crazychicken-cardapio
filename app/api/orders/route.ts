@@ -66,7 +66,8 @@ export async function POST(request: Request) {
     const deliveryFeeCents = fulfillmentType === "delivery" ? (zone?.feeCents ?? settings?.defaultDeliveryFeeCents ?? 0) : 0;
     const totalCents = subtotalCents + deliveryFeeCents;
     const code = `CC-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
-    const [saved] = await db.insert(orders).values({ code, status: "received", fulfillmentType, customerName, customerPhone, address: address || null, neighborhood: neighborhood || null, notes: notes || null, subtotalCents, deliveryFeeCents, totalCents, idempotencyKey }).returning();
+    const result = await db.insert(orders).values({ code, status: "received", fulfillmentType, customerName, customerPhone, address: address || null, neighborhood: neighborhood || null, notes: notes || null, subtotalCents, deliveryFeeCents, totalCents, idempotencyKey });
+    const [saved] = await db.select().from(orders).where(eq(orders.id, Number(result[0].insertId))).limit(1);
     if (!saved) throw new Error("Não foi possível salvar o pedido.");
     await db.insert(orderItems).values(rows.map((row) => ({ orderId: saved.id, productId: row.product!.id, productName: row.product!.name, quantity: row.quantity, unitPriceCents: row.unitPriceCents, optionsJson: JSON.stringify(row.selectedOptions.map((option) => option.label)) })));
     return Response.json({ order: saved }, { status: 201 });

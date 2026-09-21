@@ -13,7 +13,26 @@ export async function PATCH(request: Request) {
     const user = await requireAdmin();
     const body = await request.json() as Record<string, unknown>;
     const appearance = body.appearance && typeof body.appearance === "object" ? JSON.stringify(body.appearance) : undefined;
-    const [settings] = await getDb().insert(storeSettings).values({ id: 1, ...(body.brandName !== undefined ? { brandName: String(body.brandName).slice(0, 80) } : {}), ...(body.logoKey !== undefined ? { logoKey: body.logoKey ? String(body.logoKey) : null } : {}), ...(body.whatsappNumber !== undefined ? { whatsappNumber: String(body.whatsappNumber).replace(/\D/g, "").slice(0, 15) } : {}), ...(body.address !== undefined ? { address: String(body.address).slice(0, 240) } : {}), ...(body.openingHours !== undefined ? { openingHours: String(body.openingHours).slice(0, 120) } : {}), ...(body.deliveryEnabled !== undefined ? { deliveryEnabled: Boolean(body.deliveryEnabled) } : {}), ...(body.pickupEnabled !== undefined ? { pickupEnabled: Boolean(body.pickupEnabled) } : {}), ...(body.minimumOrderCents !== undefined ? { minimumOrderCents: Number(body.minimumOrderCents) || 0 } : {}), ...(body.defaultDeliveryFeeCents !== undefined ? { defaultDeliveryFeeCents: Number(body.defaultDeliveryFeeCents) || 0 } : {}), ...(body.theme !== undefined ? { theme: String(body.theme).slice(0, 40) } : {}), ...(appearance !== undefined ? { appearanceJson: appearance } : {}), updatedAt: new Date().toISOString() }).onConflictDoUpdate({ target: storeSettings.id, set: { ...(body.brandName !== undefined ? { brandName: String(body.brandName).slice(0, 80) } : {}), ...(body.logoKey !== undefined ? { logoKey: body.logoKey ? String(body.logoKey) : null } : {}), ...(body.whatsappNumber !== undefined ? { whatsappNumber: String(body.whatsappNumber).replace(/\D/g, "").slice(0, 15) } : {}), ...(body.address !== undefined ? { address: String(body.address).slice(0, 240) } : {}), ...(body.openingHours !== undefined ? { openingHours: String(body.openingHours).slice(0, 120) } : {}), ...(body.deliveryEnabled !== undefined ? { deliveryEnabled: Boolean(body.deliveryEnabled) } : {}), ...(body.pickupEnabled !== undefined ? { pickupEnabled: Boolean(body.pickupEnabled) } : {}), ...(body.minimumOrderCents !== undefined ? { minimumOrderCents: Number(body.minimumOrderCents) || 0 } : {}), ...(body.defaultDeliveryFeeCents !== undefined ? { defaultDeliveryFeeCents: Number(body.defaultDeliveryFeeCents) || 0 } : {}), ...(body.theme !== undefined ? { theme: String(body.theme).slice(0, 40) } : {}), ...(appearance !== undefined ? { appearanceJson: appearance } : {}), updatedAt: new Date().toISOString() } }).returning();
+    const db = getDb();
+    const patch = {
+      ...(body.brandName !== undefined ? { brandName: String(body.brandName).slice(0, 80) } : {}),
+      ...(body.logoKey !== undefined ? { logoKey: body.logoKey ? String(body.logoKey) : null } : {}),
+      ...(body.whatsappNumber !== undefined ? { whatsappNumber: String(body.whatsappNumber).replace(/\D/g, "").slice(0, 15) } : {}),
+      ...(body.address !== undefined ? { address: String(body.address).slice(0, 240) } : {}),
+      ...(body.openingHours !== undefined ? { openingHours: String(body.openingHours).slice(0, 120) } : {}),
+      ...(body.deliveryEnabled !== undefined ? { deliveryEnabled: Boolean(body.deliveryEnabled) } : {}),
+      ...(body.pickupEnabled !== undefined ? { pickupEnabled: Boolean(body.pickupEnabled) } : {}),
+      ...(body.minimumOrderCents !== undefined ? { minimumOrderCents: Number(body.minimumOrderCents) || 0 } : {}),
+      ...(body.defaultDeliveryFeeCents !== undefined ? { defaultDeliveryFeeCents: Number(body.defaultDeliveryFeeCents) || 0 } : {}),
+      ...(body.theme !== undefined ? { theme: String(body.theme).slice(0, 40) } : {}),
+      ...(appearance !== undefined ? { appearanceJson: appearance } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+    const [existing] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+    if (existing) await db.update(storeSettings).set(patch).where(eq(storeSettings.id, 1));
+    else await db.insert(storeSettings).values({ id: 1, ...patch, appearanceJson: appearance ?? JSON.stringify({}) });
+    const [settings] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+    if (!settings) return Response.json({ error: "Não foi possível salvar as configurações." }, { status: 500 });
     await recordAudit({ user, action: "update", entity: "store_settings", entityId: 1 });
     return Response.json({ settings });
   } catch (error) { return adminErrorResponse(error); }

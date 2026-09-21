@@ -115,6 +115,7 @@ export function AdminPanel({ products, onBack, onProductsChange = () => undefine
   const notify = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2800); };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCatalog(products);
   }, [products]);
 
@@ -198,6 +199,7 @@ export default function Home() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { const saved = window.localStorage.getItem("crazy-chicken-cart"); if (saved) { try { setCart(JSON.parse(saved)); } catch { window.localStorage.removeItem("crazy-chicken-cart"); } } fetch("/api/storefront").then((response) => response.ok ? response.json() as Promise<{ products?: Array<Product & { priceCents: number; category: string }>; settings?: Partial<StoreSettings> }> : null).then((data) => { if (!data) return; if (Array.isArray(data.products)) setProducts(data.products.map(mapApiProduct)); const incomingSettings = data.settings; if (incomingSettings) setSettings((current) => ({ ...current, ...incomingSettings, whatsappNumber: incomingSettings.whatsappNumber ?? "", appearance: { ...current.appearance, ...(incomingSettings.appearance ?? {}) } })); }).catch(() => undefined); }, []);
   useEffect(() => { window.localStorage.setItem("crazy-chicken-cart", JSON.stringify(cart)); }, [cart]);
   useEffect(() => { const root = document.documentElement; if (settings.logoKey) root.dataset.logoKey = settings.logoKey; else delete root.dataset.logoKey; root.style.setProperty("--yellow", settings.appearance.accent); root.style.setProperty("--red", settings.appearance.primary); root.style.setProperty("--cream", settings.appearance.background); }, [settings]);

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { categories, productOptions, products } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
@@ -23,7 +23,9 @@ export async function POST(request: Request) {
     const categoryId = Number(body.categoryId);
     if (!name || !Number.isInteger(categoryId)) return Response.json({ error: "Nome e categoria são obrigatórios." }, { status: 400 });
     const db = getDb();
-    const [product] = await db.insert(products).values({ categoryId, name: name.slice(0, 100), description: String(body.description ?? "").slice(0, 300), priceCents: Number.isInteger(body.priceCents) ? Number(body.priceCents) : centsFromValue(body.price), imageKey: body.imageKey ? String(body.imageKey) : null, badge: body.badge ? String(body.badge).slice(0, 40) : null, available: body.available !== false, featured: body.featured === true, sortOrder: Number(body.sortOrder) || 0 }).returning();
+    const result = await db.insert(products).values({ categoryId, name: name.slice(0, 100), description: String(body.description ?? "").slice(0, 300), priceCents: Number.isInteger(body.priceCents) ? Number(body.priceCents) : centsFromValue(body.price), imageKey: body.imageKey ? String(body.imageKey) : null, badge: body.badge ? String(body.badge).slice(0, 40) : null, available: body.available !== false, featured: body.featured === true, sortOrder: Number(body.sortOrder) || 0 });
+    const [product] = await db.select().from(products).where(eq(products.id, Number(result[0].insertId))).limit(1);
+    if (!product) return Response.json({ error: "Não foi possível criar o produto." }, { status: 500 });
     await recordAudit({ user, action: "create", entity: "product", entityId: product.id, metadata: { name: product.name } });
     return Response.json({ product }, { status: 201 });
   } catch (error) { return adminErrorResponse(error); }
@@ -36,7 +38,8 @@ export async function PATCH(request: Request) {
     const id = Number(body.id);
     if (!Number.isInteger(id)) return Response.json({ error: "Produto inválido." }, { status: 400 });
     const db = getDb();
-    const [product] = await db.update(products).set({ ...(body.name !== undefined ? { name: String(body.name).trim().slice(0, 100) } : {}), ...(body.description !== undefined ? { description: String(body.description).slice(0, 300) } : {}), ...(body.categoryId !== undefined ? { categoryId: Number(body.categoryId) } : {}), ...(body.priceCents !== undefined || body.price !== undefined ? { priceCents: body.priceCents !== undefined ? Number(body.priceCents) : centsFromValue(body.price) } : {}), ...(body.imageKey !== undefined ? { imageKey: body.imageKey ? String(body.imageKey) : null } : {}), ...(body.badge !== undefined ? { badge: body.badge ? String(body.badge).slice(0, 40) : null } : {}), ...(body.available !== undefined ? { available: Boolean(body.available) } : {}), ...(body.featured !== undefined ? { featured: Boolean(body.featured) } : {}), ...(body.sortOrder !== undefined ? { sortOrder: Number(body.sortOrder) || 0 } : {}), updatedAt: new Date().toISOString() }).where(eq(products.id, id)).returning();
+    await db.update(products).set({ ...(body.name !== undefined ? { name: String(body.name).trim().slice(0, 100) } : {}), ...(body.description !== undefined ? { description: String(body.description).slice(0, 300) } : {}), ...(body.categoryId !== undefined ? { categoryId: Number(body.categoryId) } : {}), ...(body.priceCents !== undefined || body.price !== undefined ? { priceCents: body.priceCents !== undefined ? Number(body.priceCents) : centsFromValue(body.price) } : {}), ...(body.imageKey !== undefined ? { imageKey: body.imageKey ? String(body.imageKey) : null } : {}), ...(body.badge !== undefined ? { badge: body.badge ? String(body.badge).slice(0, 40) : null } : {}), ...(body.available !== undefined ? { available: Boolean(body.available) } : {}), ...(body.featured !== undefined ? { featured: Boolean(body.featured) } : {}), ...(body.sortOrder !== undefined ? { sortOrder: Number(body.sortOrder) || 0 } : {}), updatedAt: new Date().toISOString() }).where(eq(products.id, id));
+    const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1);
     if (!product) return Response.json({ error: "Produto não encontrado." }, { status: 404 });
     await recordAudit({ user, action: "update", entity: "product", entityId: id, metadata: { name: product.name } });
     return Response.json({ product });
@@ -49,8 +52,9 @@ export async function DELETE(request: Request) {
     const id = Number(new URL(request.url).searchParams.get("id"));
     if (!Number.isInteger(id)) return Response.json({ error: "Produto inválido." }, { status: 400 });
     const db = getDb();
-    const [product] = await db.delete(products).where(eq(products.id, id)).returning();
+    const [product] = await db.select().from(products).where(eq(products.id, id)).limit(1);
     if (!product) return Response.json({ error: "Produto não encontrado." }, { status: 404 });
+    await db.delete(products).where(eq(products.id, id));
     await recordAudit({ user, action: "delete", entity: "product", entityId: id, metadata: { name: product.name } });
     return Response.json({ ok: true });
   } catch (error) { return adminErrorResponse(error); }
