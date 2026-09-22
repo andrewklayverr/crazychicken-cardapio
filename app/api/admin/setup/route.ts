@@ -6,6 +6,7 @@ import { adminErrorResponse } from "../../../../lib/admin";
 import { hashPassword, hashToken, normalizeEmail, validatePassword } from "../../../../lib/admin-security";
 import { startAdminSession } from "../../../../lib/auth";
 import { clearLoginFailures, isLoginBlocked, registerLoginFailure } from "../../../../lib/rate-limit";
+import { isTrustedRequestOrigin } from "../../../../lib/request-security";
 
 function sameSecret(left: string, right: string) {
   const a = Buffer.from(left); const b = Buffer.from(right);
@@ -13,8 +14,7 @@ function sameSecret(left: string, right: string) {
 }
 
 function validOrigin(request: Request) {
-  const origin = request.headers.get("origin");
-  return !origin || new URL(origin).host === new URL(request.url).host;
+  return isTrustedRequestOrigin(request);
 }
 
 export async function POST(request: Request) {

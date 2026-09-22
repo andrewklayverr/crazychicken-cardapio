@@ -5,6 +5,7 @@ import { getChatGPTUser, type ChatGPTUser } from "../app/chatgpt-auth";
 import { getDb } from "../db";
 import { adminSessions, adminUsers } from "../db/schema";
 import { normalizeEmail, hashToken, verifyPassword, verifyTotp } from "./admin-security";
+import { isTrustedRequestOrigin } from "./request-security";
 
 export type { ChatGPTUser } from "../app/chatgpt-auth";
 export type AdminRole = "owner" | "manager" | "attendant";
@@ -166,7 +167,7 @@ export async function endAdminSession() {
 }
 
 export async function validateAdminMutation(request: Request) {
-  const origin = request.headers.get("origin");
+  const origin = isTrustedRequestOrigin(request) ? null : request.headers.get("origin");
   if (origin && new URL(origin).host !== new URL(request.url).host) throw new Error("Origem da requisição inválida.");
   const csrf = request.headers.get("x-csrf-token");
   const token = (await cookies()).get(cookieName)?.value;
