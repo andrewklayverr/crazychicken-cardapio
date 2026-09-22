@@ -31,4 +31,13 @@ No endereço temporário, valide vitrine, bebidas e caipirinhas, carrinho após 
 
 ## Domínio
 
-Após a validação, aponte o domínio comprado para os registros exibidos no hPanel, ative HTTPS e teste com e sem `www`. A propagação pode levar algumas horas. A criação da aplicação, do banco e dos registros DNS depende do acesso à conta Hostinger e do domínio exato.
+O domínio oficial deste projeto é `crazychiken.com.br`. A marca exibida continua sendo "Crazy Chicken"; apenas o endereço usa a grafia sem o segundo `c` de "chicken".
+
+Configure na Hostinger:
+
+- `APP_URL=https://crazychiken.com.br`
+- `EMAIL_FROM=Crazy Chicken <noreply@crazychiken.com.br>` somente depois de verificar esse domínio no Resend
+
+O site, o certificado SSL e a aplicação Node.js devem estar associados a `crazychiken.com.br`. Depois do deploy, teste `https://crazychiken.com.br`, `https://crazychiken.com.br/admin` e `https://crazychiken.com.br/admin/setup`. Evite qualquer variação com uma letra `c` adicional no endereço.
+
+Após a validação, confirme os registros exibidos no hPanel, ative HTTPS e teste com e sem `www`. A propagação pode levar algumas horas. A criação da aplicação, do banco e dos registros DNS depende do acesso à conta Hostinger e do domínio exato.
