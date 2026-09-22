@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     if (existing) {
       if (existing.role !== "owner" || existing.status === "suspended") return Response.json({ error: "Esta conta não pode ser usada na configuração inicial." }, { status: 409 });
       userId = existing.id;
-      await db.update(adminUsers).set({ name: String(body.name ?? "").trim().slice(0, 120) || email.split("@")[0], passwordHash, status: "active", failedLoginCount: 0, lockedUntil: null, updatedAt: new Date().toISOString() }).where(eq(adminUsers.id, userId));
+      await db.update(adminUsers).set({ name: String(body.name ?? "").trim().slice(0, 120) || email.split("@")[0], passwordHash, status: "active", mfaSecretEncrypted: null, mfaEnabledAt: null, failedLoginCount: 0, lockedUntil: null, updatedAt: new Date().toISOString() }).where(eq(adminUsers.id, userId));
       await db.update(adminSessions).set({ revokedAt: new Date().toISOString() }).where(and(eq(adminSessions.userId, userId), isNull(adminSessions.revokedAt)));
     } else {
       const result = await db.insert(adminUsers).values({ email, name: String(body.name ?? "").trim().slice(0, 120) || email.split("@")[0], role: "owner", status: "active", passwordHash });
