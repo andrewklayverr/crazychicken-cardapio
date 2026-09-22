@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 let pool: mysql.Pool | null = null;
 
-export function getDb() {
+export function getPool() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) throw new Error("DATABASE_URL não configurada. Crie a conexão MariaDB no painel da Hostinger.");
   if (!pool) {
@@ -16,7 +16,11 @@ export function getDb() {
       ssl: process.env.DB_SSL === "true" ? {} : undefined,
     });
   }
-  return drizzle(pool, { schema, mode: "default" });
+  return pool;
+}
+
+export function getDb() {
+  return drizzle(getPool(), { schema, mode: "default" });
 }
 
 export async function closeDb() {

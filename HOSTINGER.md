@@ -1,5 +1,25 @@
 # Publicação do Crazy Chicken na Hostinger
 
+## Recuperar o proprietário sem e-mail ou SQL
+
+Após publicar esta versão, execute **localmente** na pasta do projeto:
+
+```powershell
+node scripts/generate-admin-recovery.mjs
+```
+
+O comando imprime `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_CODE` e `ADMIN_RECOVERY_EXPIRES_AT`, com código aleatório de 32 bytes e validade de 23 horas. Copie os valores para as variáveis da aplicação na Hostinger (não para o GitHub). Confirme `APP_URL=https://crazychiken.com.br`, salve e faça redeploy. O arquivo local `hostinger.env` não configura automaticamente a hospedagem.
+
+Abra `https://crazychiken.com.br/admin/recover`, informe o código e `rodrigostuarth@hotmail.com`, escolha uma senha de 12 a 128 caracteres e confirme-a. Após a confirmação de sucesso, siga para o login e use essa senha. Não coloque a senha nem seu hash nas variáveis de ambiente ou no banco manualmente.
+
+O formulário atende somente a conta proprietária existente e ativa do e-mail configurado; não cria outra conta, não altera permissões e preserva MFA. O código é de uso único, mesmo que as variáveis permaneçam configuradas. Valores expirados ou com mais de 24 horas restantes são recusados. Para obter novo prazo, gere **outro código**. Cinco tentativas por conta ou IP em 15 minutos bloqueiam temporariamente a recuperação, sem bloquear o login normal.
+
+Depois de confirmar o login, remova `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_CODE`, `ADMIN_RECOVERY_EXPIRES_AT`, `ADMIN_SETUP_CODE` e `ADMIN_SETUP_EXPIRES_AT` e reinicie/republique. Remova também `ADMIN_EMAILS` e `ADMIN_PASSWORD_HASH` quando o acesso individual estiver validado. Preserve `AUTH_SECRET`. A senha individual do banco tem prioridade sobre as variáveis antigas.
+
+Não é necessário repetir migrações: usa as tabelas administrativas da migração 002. `/admin/setup` fica reservado à instalação sem nenhuma conta administrativa. A recuperação não depende do Resend e não entra automaticamente na conta; ela encerra sessões e invalida links anteriores.
+
+Validação local: `node --test tests/admin-recovery.test.cjs`, `npm.cmd run lint` e `npm.cmd run build`. Os testes usam um banco simulado com transações serializadas; bloqueios e concorrência reais do MySQL precisam ser conferidos em uma instalação de teste antes da validação final na Hostinger.
+
 ## Aplicação
 
 Use um plano Hostinger Business ou Cloud com Node.js e configure no hPanel:

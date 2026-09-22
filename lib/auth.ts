@@ -85,6 +85,11 @@ export async function getCurrentUser(): Promise<AdminUser | null> {
     // Permite a migração progressiva em instalações antigas sem as tabelas novas.
   }
   const legacyEmail = decodeLegacySession(token);
+  // Once an individual account exists, old shared-password cookies must not bypass revocation.
+  if (legacyEmail) {
+    try { if (await findAdminUserByEmail(legacyEmail)) return null; }
+    catch { return null; }
+  }
   if (!legacyEmail || !configuredAdminEmails().includes(legacyEmail)) return null;
   return { userId: `legacy:${legacyEmail}`, displayName: legacyEmail, fullName: null, email: legacyEmail, id: 0, role: "owner", status: "active", mfaEnabledAt: null };
 }
