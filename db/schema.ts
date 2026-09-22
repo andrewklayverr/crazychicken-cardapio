@@ -30,6 +30,9 @@ export const productOptions = mysqlTable("product_options", {
   label: varchar("label", { length: 120 }).notNull(),
   priceDeltaCents: int("price_delta_cents").notNull().default(0),
   required: boolean("required").notNull().default(false),
+  selectionMode: varchar("selection_mode", { length: 20 }).notNull().default("single"),
+  minSelections: int("min_selections").notNull().default(0),
+  maxSelections: int("max_selections").notNull().default(1),
   active: boolean("active").notNull().default(true),
   sortOrder: int("sort_order").notNull().default(0),
 });
@@ -85,6 +88,7 @@ export const orderItems = mysqlTable("order_items", {
   quantity: int("quantity").notNull(),
   unitPriceCents: int("unit_price_cents").notNull(),
   optionsJson: text("options_json").notNull(),
+  itemNotes: text("item_notes"),
 });
 
 export const adminAllowlist = mysqlTable("admin_allowlist", {

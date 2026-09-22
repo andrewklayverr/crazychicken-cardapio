@@ -20,6 +20,7 @@ export function AdminTeamPanel({ currentUser }: { currentUser: { id: number; nam
   const [code, setCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const load = async () => { const response = await request("/api/admin/users"); if (response.ok) setMembers((await response.json() as { users: Member[] }).users); };
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, []);
   const invite = async () => { const response = await request("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) }); setMessage(response.ok ? "Convite enviado." : "Não foi possível enviar o convite."); if (response.ok) { setEmail(""); await load(); } };
   const toggle = async (member: Member) => { const status = member.status === "suspended" ? "active" : "suspended"; const response = await request("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: member.id, status }) }); if (response.ok) await load(); };

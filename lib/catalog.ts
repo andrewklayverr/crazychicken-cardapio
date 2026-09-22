@@ -9,7 +9,7 @@ export type CatalogProduct = {
   badge: string | null;
   available: boolean;
   featured: boolean;
-  options: Array<{ id: number; groupName: string; label: string; priceDeltaCents: number; required: boolean }>;
+  options: Array<{ id: number; groupName: string; label: string; priceDeltaCents: number; required: boolean; selectionMode?: "single" | "multiple"; minSelections?: number; maxSelections?: number }>;
 };
 
 export const fallbackCategories = [

@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "../db";
-import { categories, productOptions, products, storeSettings } from "../db/schema";
+import { categories, deliveryZones, productOptions, products, storeSettings } from "../db/schema";
 import { fallbackCategories, fallbackProducts, fallbackSettings, type CatalogProduct } from "./catalog";
 
 export function assetUrl(key: string | null | undefined) {
@@ -13,11 +13,12 @@ export function assetUrl(key: string | null | undefined) {
 export async function getStorefront() {
   try {
     const db = getDb();
-    const [categoryRows, productRows, optionRows, settingRows] = await Promise.all([
+    const [categoryRows, productRows, optionRows, settingRows, zoneRows] = await Promise.all([
       db.select().from(categories).where(eq(categories.active, true)).orderBy(asc(categories.sortOrder)),
       db.select().from(products).where(eq(products.available, true)).orderBy(asc(products.sortOrder)),
       db.select().from(productOptions).where(eq(productOptions.active, true)).orderBy(asc(productOptions.sortOrder)),
       db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1),
+      db.select().from(deliveryZones).where(eq(deliveryZones.active, true)).orderBy(asc(deliveryZones.sortOrder)),
     ]);
     if (!categoryRows.length || !productRows.length) throw new Error("catalog-not-seeded");
     const optionsByProduct = new Map<number, typeof optionRows>();
@@ -39,7 +40,7 @@ export async function getStorefront() {
         badge: product.badge,
         available: product.available,
         featured: product.featured,
-        options: (optionsByProduct.get(product.id) ?? []).map((option) => ({ id: option.id, groupName: option.groupName, label: option.label, priceDeltaCents: option.priceDeltaCents, required: option.required })),
+        options: (optionsByProduct.get(product.id) ?? []).map((option) => ({ id: option.id, groupName: option.groupName, label: option.label, priceDeltaCents: option.priceDeltaCents, required: option.required, selectionMode: option.selectionMode as "single" | "multiple", minSelections: option.minSelections, maxSelections: option.maxSelections })),
       };
     });
     const setting = settingRows[0];
@@ -47,6 +48,7 @@ export async function getStorefront() {
       categories: categoryRows,
       products: mappedProducts,
       settings: setting ? { ...fallbackSettings, ...setting, whatsappNumber: setting.whatsappNumber ?? "", logoKey: setting.logoKey || fallbackSettings.logoKey, appearance: parseAppearance(setting.appearanceJson) } : fallbackSettings,
+      deliveryZones: zoneRows.map((zone) => ({ id: zone.id, name: zone.name, feeCents: zone.feeCents })),
     };
   } catch {
     return { categories: fallbackCategories, products: fallbackProducts, settings: fallbackSettings };
