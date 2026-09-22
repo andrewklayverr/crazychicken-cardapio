@@ -7,6 +7,7 @@ import {
   Plus, Search, Settings2, ShoppingBag, SlidersHorizontal, Trash2,
   Utensils, X,
 } from "lucide-react";
+import { BrandMark } from "../components/brand-mark";
 import { StorefrontExperience } from "../components/storefront-experience";
 
 type Category = "Todos" | "Frangos" | "Acompanhamentos" | "Molhos" | "Novidades" | "Bebidas";
@@ -36,12 +37,6 @@ function adminFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const cookie = typeof document !== "undefined" ? document.cookie.split("; ").find((item) => item.startsWith("crazy_chicken_csrf=")) : undefined;
   const csrf = cookie?.slice("crazy_chicken_csrf=".length);
   return fetch(input, { ...init, headers: { ...(init.headers as Record<string, string> | undefined), ...(csrf ? { "X-CSRF-Token": decodeURIComponent(csrf) } : {}) } });
-}
-
-function BrandMark({ compact = false, logoKey }: { compact?: boolean; logoKey?: string | null }) {
-  const resolvedLogoKey = logoKey ?? (typeof document !== "undefined" ? document.documentElement.dataset.logoKey : undefined) ?? "/logo-frango.png";
-  const logo = resolvedLogoKey ? (resolvedLogoKey.startsWith("/") || resolvedLogoKey.includes(".") && !resolvedLogoKey.includes("/") ? `/${resolvedLogoKey.replace(/^\//, "")}` : `/api/media?key=${encodeURIComponent(resolvedLogoKey)}`) : null;
-  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}>{logo ? <img className="brand-mark__image" src={logo} alt="Crazy Chicken" /> : <div className="brand-mark__icon">🐔</div>}{!compact && <div className="brand-mark__copy"><strong>Crazy</strong><span>Chicken</span></div>}</div>;
 }
 
 function PillButton({ children, active = false, onClick }: { children: React.ReactNode; active?: boolean; onClick: () => void }) {

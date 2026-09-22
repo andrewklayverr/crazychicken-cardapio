@@ -239,3 +239,155 @@ html, body { max-width:100%; overflow-x:hidden; }
   .tracking-form { grid-template-columns:1fr; }.tracking-form .primary-button { width:100%; }
   .tracking-timeline { grid-template-columns:repeat(3,1fr); row-gap:17px; }
 }
+/* Final brand, checkout and mobile layout corrections */
+.brand-mark {
+  width: max-content;
+  min-width: 0;
+  gap: 0;
+}
+
+.brand-mark__image {
+  display: block;
+  width: 86px;
+  height: 52px;
+  max-width: 100%;
+  max-height: 100%;
+  flex: 0 0 auto;
+  object-fit: contain;
+  border-radius: 0;
+}
+
+.brand-mark--compact .brand-mark__image {
+  width: 68px;
+  height: 42px;
+}
+
+.admin-login-card .brand-mark__image {
+  width: 170px;
+  height: 78px;
+}
+
+.admin-sidebar .brand-mark__image {
+  width: 130px;
+  height: 54px;
+}
+
+.tracking-brand {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 28px;
+  text-decoration: none;
+}
+
+.tracking-brand .brand-mark__image {
+  width: 170px;
+  height: 72px;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.checkout-form .form-label {
+  margin: 10px 0 0;
+}
+
+.checkout-summary {
+  margin-bottom: 6px;
+}
+
+.fulfillment-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffaf1;
+}
+
+.fulfillment-toggle button {
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  padding: 11px 8px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fulfillment-toggle button.active {
+  background: var(--red);
+  color: #fff;
+}
+
+.order-success {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-success .checkout-button,
+.order-success .secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 0;
+  text-align: center;
+}
+
+.order-success .form-error {
+  margin: 0;
+}
+
+.checkout-form > .secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4px;
+}
+
+@media (max-width: 760px) {
+  .brand-mark__image {
+    width: 72px;
+    height: 42px;
+  }
+
+  .brand-mark--compact .brand-mark__image {
+    width: 60px;
+    height: 38px;
+  }
+
+  .admin-login-card .brand-mark__image {
+    width: 150px;
+    height: 70px;
+  }
+
+  .tracking-brand .brand-mark__image {
+    width: 150px;
+    height: 64px;
+  }
+
+  .cart-drawer {
+    padding: 20px 16px 24px;
+  }
+
+  .checkout-summary > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .checkout-summary small {
+    text-align: left;
+  }
+}
