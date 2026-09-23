@@ -598,5 +598,19 @@ html, body { max-width:100%; overflow-x:hidden; }
   .admin-login-card { width:100%; padding:24px 16px; overflow:hidden; }
   .admin-login-card .brand-mark { width:100%; justify-content:center; }
   .admin-login-card h1 { font-size:clamp(30px,9vw,40px); overflow-wrap:anywhere; }
-  .admin-login-card .primary-button,.admin-login-card .secondary-button { width:100%; min-height:48px; }
+.admin-login-card .primary-button,.admin-login-card .secondary-button { width:100%; min-height:48px; }
+}
+
+/* Evita zoom automatico do Safari e overflow em qualquer formulario mobile. */
+html { -webkit-text-size-adjust:100%; }
+body { width:100%; min-width:0; }
+input,textarea,select,button { max-width:100%; box-sizing:border-box; }
+@media (max-width:760px) {
+  .admin-login-page,.admin-login-card,.admin-login-card form { width:100%; max-width:100%; min-width:0; }
+  .admin-login-card p,.admin-login-card label,.admin-login-card .eyebrow { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+  .admin-login-card input,.admin-login-card textarea,.admin-login-card select,
+  .form-label input,.form-label textarea,.form-label select,
+  .search-field input,.tracking-form input { font-size:16px; line-height:1.25; }
+  .admin-login-card .brand-mark__image { flex-shrink:1; }
+  .form-label,.form-two-col>*,.team-invite__fields>*,.option-group-editor__head>*,.option-item-editor>* { min-width:0; max-width:100%; }
 }
