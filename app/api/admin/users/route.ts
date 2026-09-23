@@ -1,7 +1,7 @@
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
-import { adminSessions, adminTokens, adminUsers } from "../../../../db/schema";
-import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
+import { adminRecoveryCodes, adminSessions, adminTokens, adminUsers, auditLog } from "../../../../db/schema";
+import { AdminAuthError, adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
 import { hashToken, normalizeEmail, randomToken } from "../../../../lib/admin-security";
 import { sendAdminInvite } from "../../../../lib/email";
 import { validateAdminMutation } from "../../../../lib/auth";
@@ -53,6 +53,31 @@ export async function PATCH(request: Request) {
     await getDb().update(adminUsers).set({ role: nextRole, status: nextStatus, ...(body.name !== undefined ? { name: String(body.name).trim().slice(0, 120) } : {}), updatedAt: new Date().toISOString() }).where(eq(adminUsers.id, id));
     if (nextStatus === "suspended") await getDb().update(adminSessions).set({ revokedAt: new Date().toISOString() }).where(and(eq(adminSessions.userId, id), isNull(adminSessions.revokedAt)));
     await recordAudit({ user: actor, action: "update", entity: "admin_user", entityId: id, metadata: { role: nextRole, status: nextStatus } });
+    return Response.json({ ok: true });
+  } catch (error) { return adminErrorResponse(error); }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const actor = await requireAdmin(["owner"]); await validateAdminMutation(request);
+    const body = await request.json().catch(() => ({})) as { id?: number };
+    const id = Number(body.id);
+    if (!Number.isInteger(id) || id <= 0) return Response.json({ error: "Usuário inválido." }, { status: 400 });
+    if (id === actor.id) return Response.json({ error: "Você não pode excluir sua própria conta." }, { status: 400 });
+
+    await getDb().transaction(async (tx) => {
+      const [target] = await tx.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
+      if (!target) throw new AdminAuthError("Usuário não encontrado.", 404);
+      if (target.role === "owner" && target.status === "active") {
+        const activeOwners = await tx.select({ id: adminUsers.id }).from(adminUsers).where(and(eq(adminUsers.role, "owner"), eq(adminUsers.status, "active")));
+        if (activeOwners.length <= 1) throw new AdminAuthError("A instalação precisa manter pelo menos um proprietário ativo.", 400);
+      }
+      await tx.insert(auditLog).values({ actorUserId: actor.userId, actorEmail: actor.email, action: "delete", entity: "admin_user", entityId: String(id), metadataJson: JSON.stringify({ email: target.email, name: target.name, role: target.role, status: target.status }) });
+      await tx.delete(adminSessions).where(eq(adminSessions.userId, id));
+      await tx.delete(adminTokens).where(eq(adminTokens.userId, id));
+      await tx.delete(adminRecoveryCodes).where(eq(adminRecoveryCodes.userId, id));
+      await tx.delete(adminUsers).where(eq(adminUsers.id, id));
+    });
     return Response.json({ ok: true });
   } catch (error) { return adminErrorResponse(error); }
 }

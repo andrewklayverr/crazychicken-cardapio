@@ -239,6 +239,9 @@ html, body { max-width:100%; overflow-x:hidden; }
   .tracking-form { grid-template-columns:1fr; }.tracking-form .primary-button { width:100%; }
   .tracking-timeline { grid-template-columns:repeat(3,1fr); row-gap:17px; }
 }
+
+.danger-button { min-height:44px; flex-shrink:0; border:1px solid #edb7b1; border-radius:8px; padding:8px 13px; background:#fff4f1; color:var(--red); font-size:13px; font-weight:800; }
+.danger-button:hover { border-color:var(--red); background:#ffe8e3; }
 /* Final brand, checkout and mobile layout corrections */
 .brand-mark {
   width: max-content;
