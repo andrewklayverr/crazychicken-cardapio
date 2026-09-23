@@ -71,9 +71,33 @@ function mapProduct(item: Product & { priceCents?: number; imageKey?: string | n
   return { ...item, price: item.priceCents !== undefined ? item.priceCents / 100 : item.price, category: item.category ?? "Novidades", image, imageKey };
 }
 
-function sameSaoPauloDay(value: string, now = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
-  return formatter.format(new Date(value)) === formatter.format(now);
+type DashboardPeriod = "day" | "week" | "fortnight" | "month";
+type OrderPeriod = DashboardPeriod | "all";
+const dashboardPeriodLabels: Record<DashboardPeriod, string> = { day: "Hoje", week: "Esta semana", fortnight: "Quinzena", month: "Este mês" };
+const realizedOrderStatuses = new Set(["confirmed", "preparing", "ready", "out_for_delivery", "completed"]);
+
+function saoPauloDateKey(value: string | Date) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(value));
+}
+
+function periodStartKey(period: DashboardPeriod, now = new Date()) {
+  const today = saoPauloDateKey(now);
+  if (period === "month") return `${today.slice(0, 7)}-01`;
+  const days = period === "day" ? 0 : period === "week" ? 6 : 14;
+  const start = new Date(`${today}T12:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - days);
+  return start.toISOString().slice(0, 10);
+}
+
+function isInDashboardPeriod(value: string, period: DashboardPeriod | "all") {
+  if (period === "all") return true;
+  const key = saoPauloDateKey(value);
+  return key >= periodStartKey(period) && key <= saoPauloDateKey(new Date());
+}
+
+function greetingForSaoPaulo(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", hour: "numeric", hour12: false }).format(now));
+  return hour < 12 ? "Bom dia" : "Boa noite";
 }
 
 function parseOptions(value: string) {
@@ -99,6 +123,8 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
   const [editing, setEditing] = useState<Product | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<{ order: AdminOrder; items: OrderItem[] } | null>(null);
   const [orderFilter, setOrderFilter] = useState("all");
+  const [dashboardPeriod, setDashboardPeriod] = useState<DashboardPeriod>("day");
+  const [orderPeriod, setOrderPeriod] = useState<OrderPeriod>("day");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [accountMenu, setAccountMenu] = useState(false);
@@ -177,10 +203,10 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
   const allNavItems: Array<[AdminSection, typeof LayoutDashboard, string]> = [["visao", LayoutDashboard, "Visão geral"], ["pedidos", ShoppingBag, "Pedidos"], ["produtos", Package, "Produtos"], ["aparencia", SlidersHorizontal, "Aparência"], ["configuracoes", Settings2, "Configurações"], ["equipe", Users, "Equipe e acessos"], ["atividades", History, "Atividades"]];
   const navItems = allNavItems.filter(([key]) => allowedSections.includes(key));
   const pendingOrders = orders.filter((order) => ["received", "confirmed", "preparing"].includes(order.status));
-  const todayOrders = orders.filter((order) => sameSaoPauloDay(order.createdAt));
-  const revenue = todayOrders.filter((order) => order.status !== "cancelled").reduce((sum, order) => sum + order.totalCents, 0);
-  const visibleOrders = orderFilter === "all" ? orders : orders.filter((order) => order.status === orderFilter);
-  const title: Record<AdminSection, string> = { visao: `Bom dia, ${currentUser.displayName}.`, pedidos: "Pedidos", produtos: "Produtos", aparencia: "Aparência", configuracoes: "Configurações", equipe: "Equipe e acessos", atividades: "Atividades", seguranca: "Minha segurança" };
+  const periodOrders = orders.filter((order) => isInDashboardPeriod(order.createdAt, dashboardPeriod));
+  const revenue = periodOrders.filter((order) => realizedOrderStatuses.has(order.status)).reduce((sum, order) => sum + order.totalCents, 0);
+  const visibleOrders = orders.filter((order) => isInDashboardPeriod(order.createdAt, orderPeriod) && (orderFilter === "all" || order.status === orderFilter));
+  const title: Record<AdminSection, string> = { visao: `${greetingForSaoPaulo()}, ${currentUser.displayName}.`, pedidos: "Pedidos", produtos: "Produtos", aparencia: "Aparência", configuracoes: "Configurações", equipe: "Equipe e acessos", atividades: "Atividades", seguranca: "Minha segurança" };
 
   const navigation = <><div className="admin-sidebar__top"><BrandMark /><span className="admin-tag">painel do admin</span><button type="button" className="admin-mobile-close" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X size={20} /></button></div><nav className="admin-nav" aria-label="Painel administrativo">{navItems.map(([key, Icon, label], index) => <button ref={index === 0 ? menuFirst : undefined} key={key} className={section === key ? "active" : ""} onClick={() => setSection(key)}><Icon size={18} />{label}{key === "pedidos" && pendingOrders.length > 0 && <span className="admin-nav__count">{pendingOrders.length}</span>}</button>)}</nav><Link className="admin-back" href="/"><Eye size={17} /> Ver loja</Link><button type="button" className="admin-user" onClick={() => setAccountMenu((value) => !value)} aria-expanded={accountMenu}><div className="admin-avatar">{currentUser.displayName.slice(0, 2).toUpperCase()}</div><span><strong>{currentUser.displayName}</strong><small>{roleLabels[currentUser.role]}</small></span><ChevronRight size={15} /></button>{accountMenu && <div className="admin-account-menu"><button type="button" onClick={() => setSection("seguranca")}><Settings2 size={16} /> Minha segurança</button><button type="button" onClick={logout}><LogOut size={16} /> Sair</button></div>}</>;
 
@@ -191,8 +217,8 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
       <div className="admin-mobile-bar"><button type="button" className="icon-button" onClick={() => setMobileMenu(true)} aria-label="Abrir menu" aria-expanded={mobileMenu}><Menu size={21} /></button><BrandMark compact /><button type="button" className="icon-button" onClick={() => setNotifications((value) => !value)} aria-label="Pedidos pendentes"><Bell size={19} />{pendingOrders.length > 0 && <b>{pendingOrders.length}</b>}</button></div>
       <header className="admin-header"><div><span className="eyebrow">Operação Crazy Chicken</span><h1>{title[section]}</h1></div><div className="admin-header__actions"><div className="admin-popover-wrap"><button type="button" className="icon-button" onClick={() => setNotifications((value) => !value)} aria-label="Notificações"><Bell size={19} />{pendingOrders.length > 0 && <b>{pendingOrders.length}</b>}</button>{notifications && <div className="admin-notifications"><strong>Pedidos em andamento</strong>{pendingOrders.slice(0, 5).map((order) => <button type="button" key={order.id} onClick={() => { setSection("pedidos"); void openOrder(order.id); }}>{order.code}<span>{statusLabels[order.status]}</span></button>)}{!pendingOrders.length && <p>Nenhum pedido pendente.</p>}</div>}</div><Link className="admin-store-link" href="/">Abrir loja <ArrowRight size={16} /></Link></div></header>
       {notice && <div className="admin-notice" role="status"><Check size={17} /> {notice}</div>}
-      {section === "visao" && <Dashboard orders={orders} todayOrders={todayOrders} revenue={revenue} onSection={setSection} onOrder={openOrder} onStatus={updateOrderStatus} />}
-      {section === "pedidos" && <OrdersSection orders={visibleOrders} filter={orderFilter} onFilter={setOrderFilter} onOrder={openOrder} onStatus={updateOrderStatus} />}
+      {section === "visao" && <Dashboard orders={periodOrders} periodOrders={periodOrders} revenue={revenue} period={dashboardPeriod} onPeriod={setDashboardPeriod} onSection={setSection} onOrder={openOrder} onStatus={updateOrderStatus} />}
+      {section === "pedidos" && <OrdersSection orders={visibleOrders} filter={orderFilter} onFilter={setOrderFilter} period={orderPeriod} onPeriod={setOrderPeriod} onOrder={openOrder} onStatus={updateOrderStatus} />}
       {section === "produtos" && <ProductsSection products={catalog} onEdit={setEditing} onDelete={deleteProduct} onNew={() => setEditing({ id: 0, name: "Novo produto", description: "", price: 0, category: categories[0]?.name ?? "Frangos", image: "/hero-food.jpeg", available: true, options: [] })} />}
       {section === "aparencia" && <AppearanceSection settings={settings} dirty={settingsDirty.appearance} saving={savingSettings} onPatch={(patch) => patchSettings(patch, "appearance")} onSave={() => saveSettings("appearance")} />}
       {section === "configuracoes" && <SettingsSection settings={settings} zones={zones} dirty={settingsDirty.operations} saving={savingSettings} onPatch={(patch) => patchSettings(patch, "operations")} onSave={() => saveSettings("operations")} onZones={setZones} notify={notify} upload={upload} />}
@@ -205,14 +231,15 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
   </div>;
 }
 
-function Dashboard({ orders, todayOrders, revenue, onSection, onOrder, onStatus }: { orders: AdminOrder[]; todayOrders: AdminOrder[]; revenue: number; onSection: (section: AdminSection) => void; onOrder: (id: number) => void; onStatus: (id: number, status: string) => void }) {
-  const valid = todayOrders.filter((order) => order.status !== "cancelled");
-  const stats = [["Pedidos hoje", String(todayOrders.length), "atualiza automaticamente"], ["Faturamento hoje", money(revenue), "sem pedidos cancelados"], ["Ticket médio", money(valid.length ? revenue / valid.length : 0), "média de hoje"]];
-  return <><div className="stats-grid">{stats.map(([label, value, help]) => <div className="stat-card" key={label}><span>{label}</span><strong>{value}</strong><small>{help}</small></div>)}</div><div className="admin-columns"><section className="admin-card"><div className="admin-card__heading"><div><span className="eyebrow">Acompanhe de perto</span><h2>Pedidos recentes</h2></div><button type="button" className="text-button" onClick={() => onSection("pedidos")}>Ver todos <ArrowRight size={15} /></button></div><OrderList orders={orders.slice(0, 5)} onOrder={onOrder} onStatus={onStatus} /></section><section className="admin-card admin-card--dark"><span className="eyebrow eyebrow--light">Atalho rápido</span><h2>Atualize sua operação.</h2><p>Produtos, visual, horários, taxas e bairros em um só painel.</p><button type="button" className="dark-card-button" onClick={() => onSection("configuracoes")}>Abrir configurações <ArrowRight size={16} /></button></section></div></>;
+function Dashboard({ orders, periodOrders, revenue, period, onPeriod, onSection, onOrder, onStatus }: { orders: AdminOrder[]; periodOrders: AdminOrder[]; revenue: number; period: DashboardPeriod; onPeriod: (value: DashboardPeriod) => void; onSection: (section: AdminSection) => void; onOrder: (id: number) => void; onStatus: (id: number, status: string) => void }) {
+  const valid = periodOrders.filter((order) => realizedOrderStatuses.has(order.status));
+  const periodLabel = dashboardPeriodLabels[period];
+  const stats = [[`Pedidos · ${periodLabel}`, String(periodOrders.length), "todos os status"], [`Faturamento · ${periodLabel}`, money(revenue), "confirmados ou finalizados"], ["Ticket médio", money(valid.length ? revenue / valid.length : 0), `média de ${periodLabel.toLowerCase()}`]];
+  return <><div className="admin-card dashboard-toolbar"><div><span className="eyebrow">Período do dashboard</span><strong>Resumo da operação</strong></div><select className="filter-button" value={period} onChange={(event) => onPeriod(event.target.value as DashboardPeriod)} aria-label="Período do dashboard">{Object.entries(dashboardPeriodLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div><div className="stats-grid">{stats.map(([label, value, help]) => <div className="stat-card" key={label}><span>{label}</span><strong>{value}</strong><small>{help}</small></div>)}</div><div className="admin-columns"><section className="admin-card"><div className="admin-card__heading"><div><span className="eyebrow">Acompanhe de perto</span><h2>Pedidos recentes</h2></div><button type="button" className="text-button" onClick={() => onSection("pedidos")}>Ver todos <ArrowRight size={15} /></button></div><OrderList orders={orders.slice(0, 5)} onOrder={onOrder} onStatus={onStatus} /></section><section className="admin-card admin-card--dark"><span className="eyebrow eyebrow--light">Atalho rápido</span><h2>Atualize sua operação.</h2><p>Produtos, visual, horários, taxas e bairros em um só painel.</p><button type="button" className="dark-card-button" onClick={() => onSection("configuracoes")}>Abrir configurações <ArrowRight size={16} /></button></section></div></>;
 }
 
-function OrdersSection({ orders, filter, onFilter, onOrder, onStatus }: { orders: AdminOrder[]; filter: string; onFilter: (value: string) => void; onOrder: (id: number) => void; onStatus: (id: number, status: string) => void }) {
-  return <section className="admin-card page-card"><div className="admin-card__heading"><div><span className="eyebrow">Operação</span><h2>Todos os pedidos</h2></div><select className="filter-button" value={filter} onChange={(event) => onFilter(event.target.value)}><option value="all">Todos os status</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div><OrderList orders={orders} onOrder={onOrder} onStatus={onStatus} /></section>;
+function OrdersSection({ orders, filter, onFilter, period, onPeriod, onOrder, onStatus }: { orders: AdminOrder[]; filter: string; onFilter: (value: string) => void; period: OrderPeriod; onPeriod: (value: OrderPeriod) => void; onOrder: (id: number) => void; onStatus: (id: number, status: string) => void }) {
+  return <section className="admin-card page-card"><div className="admin-card__heading"><div><span className="eyebrow">Operação</span><h2>Todos os pedidos</h2></div><div className="orders-filters"><select className="filter-button" value={period} onChange={(event) => onPeriod(event.target.value as OrderPeriod)} aria-label="Período dos pedidos"><option value="all">Todos os períodos</option>{Object.entries(dashboardPeriodLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><select className="filter-button" value={filter} onChange={(event) => onFilter(event.target.value)} aria-label="Status dos pedidos"><option value="all">Todos os status</option>{Object.entries(statusLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></div></div><OrderList orders={orders} onOrder={onOrder} onStatus={onStatus} /></section>;
 }
 
 function OrderList({ orders, onOrder, onStatus }: { orders: AdminOrder[]; onOrder: (id: number) => void; onStatus: (id: number, status: string) => void }) {
