@@ -469,3 +469,119 @@ html, body { max-width:100%; overflow-x:hidden; }
   .admin-main { padding-inline:8px; }.admin-mobile-bar { padding-inline:9px; }.admin-card { padding:11px; }
   .admin-product-row { grid-template-columns:46px minmax(0,1fr) 44px; }.admin-product-row .icon-button--danger { grid-column:3; grid-row:2; }.admin-product-row>b { grid-column:2; }.admin-header h1 { font-size:28px; }
 }
+
+/* Camada final: tema público e contenção responsiva do painel */
+.storefront-shell {
+  background:var(--store-bg);
+  color:var(--store-text);
+  transition:background-color .2s ease,color .2s ease;
+}
+.storefront-shell .store-header { background:var(--store-header); border-color:var(--store-line); }
+.storefront-shell .store-nav__link,
+.storefront-shell .store-status,
+.storefront-shell .product-card p,
+.storefront-shell .product-card__meta,
+.storefront-shell .store-footer,
+.storefront-shell .cart-summary>div,
+.storefront-shell .cart-summary small,
+.storefront-shell .drawer-empty,
+.storefront-shell .dialog-description,
+.storefront-shell .privacy-note { color:var(--store-muted); }
+.storefront-shell .store-nav__link--active,
+.storefront-shell .store-nav__link:hover,
+.storefront-shell .product-card,
+.storefront-shell .product-card h3,
+.storefront-shell .product-card__footer>strong,
+.storefront-shell .cart-summary strong,
+.storefront-shell .cart-summary .cart-total,
+.storefront-shell .drawer-header h2,
+.storefront-shell .form-label input,
+.storefront-shell .form-label textarea,
+.storefront-shell .form-label select { color:var(--store-text); }
+.storefront-shell .featured-strip__item,
+.storefront-shell .product-card,
+.storefront-shell .search-field,
+.storefront-shell .cart-drawer,
+.storefront-shell .product-options-dialog,
+.storefront-shell .mobile-menu,
+.storefront-shell .option-choice,
+.storefront-shell .icon-button,
+.storefront-shell .secondary-button,
+.storefront-shell .form-label input,
+.storefront-shell .form-label textarea,
+.storefront-shell .form-label select,
+.storefront-shell .quantity-control button { background:var(--store-surface); color:var(--store-text); border-color:var(--store-line); }
+.storefront-shell .menu-toolbar,
+.storefront-shell .store-footer,
+.storefront-shell .cart-item,
+.storefront-shell .cart-summary,
+.storefront-shell .checkout-summary,
+.storefront-shell .mobile-menu__header,
+.storefront-shell .mobile-menu__nav a,
+.storefront-shell .mobile-menu__nav button,
+.storefront-shell .option-group legend,
+.storefront-shell .customizer-row { border-color:var(--store-line); }
+.storefront-shell .category-pill { color:var(--store-muted); }
+.storefront-shell .category-pill--active,
+.storefront-shell .cart-button,
+.storefront-shell .drink-spotlight { background:var(--store-strong); color:#fff; }
+.storefront-shell .product-card__image-wrap { background:var(--store-surface-alt); }
+.storefront-shell .product-card__quick-add,
+.storefront-shell .floating-cart,
+.storefront-shell .checkout-button,
+.storefront-shell .primary-button,
+.storefront-shell .order-callout { background:var(--store-primary); color:var(--store-on-primary); }
+.storefront-shell .hero-banner__cta,
+.storefront-shell .drink-spotlight__copy button { background:var(--store-accent); color:#171411; }
+.storefront-shell .product-card__badge,
+.storefront-shell .cart-button b,
+.storefront-shell .floating-cart b { background:var(--store-accent); color:#171411; }
+.storefront-shell .product-card__add,
+.storefront-shell .product-card__meta .product-card__dot,
+.storefront-shell .featured-strip__item small,
+.storefront-shell .featured-strip__item svg,
+.storefront-shell .store-footer .footer-social { color:var(--store-primary); }
+.storefront-shell .product-card__dot { background:var(--store-primary); }
+.storefront-shell .store-closed-banner { background:var(--store-strong); color:#fff; border-bottom:1px solid var(--store-line); }
+.storefront-shell .store-closed-toast { background:var(--store-strong); }
+
+.mini-preview { background:var(--store-bg); color:var(--store-text); border:1px solid var(--store-line); }
+.mini-preview__top { color:var(--store-primary); border-color:var(--store-line); }
+.mini-preview h3 { color:var(--store-text); }
+.mini-preview button { background:var(--store-primary); color:var(--store-on-primary); }
+.mini-preview__line { background:var(--store-surface-alt); }
+
+.admin-main { max-width:none; }
+.admin-main>* { width:100%; max-width:1490px; margin-left:auto; margin-right:auto; }
+.admin-card,.editor-section,.team-layout,.settings-layout,.appearance-layout { min-width:0; }
+.form-label,.form-two-col>*,.team-invite__fields>*,.option-group-editor__head>*,.option-item-editor>* { min-width:0; }
+.form-label input,.form-label textarea,.form-label select,
+.option-group-editor input,.option-group-editor select,
+.team-actions select { width:100%; max-width:100%; box-sizing:border-box; }
+.form-two-col { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.team-invite__fields { display:grid; grid-template-columns:1fr; gap:0; }
+.publish-meta { margin:18px 0 -16px; color:#247c3b; font-size:12px; font-weight:800; }
+.publish-meta.pending { color:#9a6300; }
+.product-editor { width:min(1180px,calc(100vw - 48px)); }
+.product-editor__body { grid-template-columns:minmax(360px,.82fr) minmax(0,1.18fr); }
+.product-editor__body:not(:has(.option-group-editor)) { grid-template-columns:minmax(0,760px); justify-content:center; }
+.option-editor:not(:has(.option-group-editor))::after { content:"Nenhum grupo cadastrado. Adicione sabores ou extras somente quando este produto precisar."; display:block; margin-top:16px; padding:18px; border:1px dashed var(--line); border-radius:9px; color:var(--muted); font-size:12px; line-height:1.5; }
+
+@media (max-width:1200px) {
+  .appearance-layout,.settings-layout,.team-layout { grid-template-columns:1fr; }
+  .product-editor__body { grid-template-columns:1fr; }
+}
+
+@media (min-width:761px) and (max-width:1100px) {
+  .admin-sidebar { width:220px; }
+  .admin-main { padding:34px 24px 60px; }
+  .stats-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .admin-columns { grid-template-columns:1fr; }
+}
+
+@media (max-width:760px) {
+  .admin-main>* { max-width:none; }
+  .form-two-col { grid-template-columns:1fr; }
+  .product-editor__body:not(:has(.option-group-editor)) { display:block; }
+  .storefront-shell .store-header { background:var(--store-header); }
+}

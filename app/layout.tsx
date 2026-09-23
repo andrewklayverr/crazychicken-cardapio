@@ -22,8 +22,21 @@ export const metadata: Metadata = {
     "codex-preview": "development",
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [
+      {
+        url: "/logo-frango.png?v=20260923",
+        type: "image/png",
+        sizes: "1254x1254",
+      },
+    ],
+    shortcut: "/logo-frango.png?v=20260923",
+    apple: [
+      {
+        url: "/logo-frango.png?v=20260923",
+        type: "image/png",
+        sizes: "1254x1254",
+      },
+    ],
   },
 };
 

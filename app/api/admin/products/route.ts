@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getDb } from "../../../../db";
 import { categories, productOptions, products } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
     await replaceOptions(db, product.id, body.options);
     const savedOptions = await db.select().from(productOptions).where(eq(productOptions.productId, product.id)).orderBy(asc(productOptions.sortOrder), asc(productOptions.id));
     await recordAudit({ user, action: "create", entity: "product", entityId: product.id, metadata: { name: product.name } });
+    revalidatePath("/", "page");
     return Response.json({ product: { ...product, options: savedOptions } }, { status: 201 });
   } catch (error) { return adminErrorResponse(error); }
 }
@@ -86,6 +88,7 @@ export async function PATCH(request: Request) {
     await replaceOptions(db, product.id, body.options);
     const savedOptions = await db.select().from(productOptions).where(eq(productOptions.productId, product.id)).orderBy(asc(productOptions.sortOrder), asc(productOptions.id));
     await recordAudit({ user, action: "update", entity: "product", entityId: id, metadata: { name: product.name } });
+    revalidatePath("/", "page");
     return Response.json({ product: { ...product, options: savedOptions } });
   } catch (error) { return adminErrorResponse(error); }
 }
@@ -101,6 +104,7 @@ export async function DELETE(request: Request) {
     await db.delete(productOptions).where(eq(productOptions.productId, id));
     await db.delete(products).where(eq(products.id, id));
     await recordAudit({ user, action: "delete", entity: "product", entityId: id, metadata: { name: product.name } });
+    revalidatePath("/", "page");
     return Response.json({ ok: true });
   } catch (error) { return adminErrorResponse(error); }
 }

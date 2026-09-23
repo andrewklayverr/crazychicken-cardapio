@@ -45,13 +45,17 @@ Não publique arquivos `.env`, senhas ou a pasta `backups/` no repositório.
 
 ## MariaDB
 
+O banco da aplicação é o MariaDB/MySQL da Hostinger. O phpMyAdmin é somente a interface de manutenção para importar migrações, consultar registros, fazer backup e diagnosticar problemas; o painel e a loja acessam o banco diretamente pela `DATABASE_URL`.
+
+As operações comuns devem ser feitas no painel do site, sem editar manualmente os registros no phpMyAdmin. Aparência, modo de funcionamento e agenda ficam na tabela `store_settings`. Produtos, pedidos, opções, bairros e administradores permanecem em suas tabelas próprias.
+
 Crie o banco e o usuário no hPanel. Cadastre as variáveis do `.env.example`. O formato de `DATABASE_URL` é:
 
 `mysql://USUARIO:SENHA@HOST:3306/BANCO`
 
-Gere a senha administrativa localmente com `npm run auth:hash -- "SUA_SENHA_FORTE"`. Copie o resultado para `ADMIN_PASSWORD_HASH` e informe o e-mail autorizado em `ADMIN_EMAILS`.
+Contas administrativas ativas usam o e-mail e o hash individual da tabela `admin_users`. Não coloque a senha escolhida no painel nas variáveis de ambiente. `ADMIN_EMAILS` e `ADMIN_PASSWORD_HASH` são apenas compatibilidade legada e podem ser removidas da hospedagem depois de validar o acesso individual.
 
-Com o banco configurado, execute uma vez `npm run db:migrate`. Antes de atualizações importantes, execute `npm run db:backup` e guarde o SQL fora da hospedagem.
+Com o banco configurado, execute uma vez `npm run db:migrate` ou importe as migrações pelo phpMyAdmin na ordem numérica. A correção de publicação não cria uma migração nova; apenas confirme que a `004_admin_operations.sql` já foi aplicada. Antes de atualizações importantes, execute `npm run db:backup` e guarde o SQL fora da hospedagem.
 
 ## Uploads
 

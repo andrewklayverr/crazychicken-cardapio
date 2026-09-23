@@ -1,6 +1,8 @@
 import { getStorefront } from "../../../lib/store";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const data = await getStorefront();
-  return Response.json(data, { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=120" } });
+  return Response.json(data, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }

@@ -93,15 +93,14 @@ export async function POST(request: Request) {
     const db = getDb();
     const settingsRows = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
     const settings = settingsRows[0];
+    if (!settings) return Response.json({ error: "Pedidos temporariamente indisponíveis." }, { status: 503 });
     const existing = await db.select().from(orders).where(eq(orders.idempotencyKey, idempotencyKey)).limit(1);
     if (existing[0]) {
       const existingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, existing[0].id));
       return Response.json({ order: existing[0], whatsappUrl: buildWhatsappUrl(existing[0], existingItems, settings?.whatsappNumber), duplicate: true });
     }
-    if (settings) {
-      const availability = getStoreAvailability({ orderingMode: settings.orderingMode, weeklySchedule: parseWeeklySchedule(settings.weeklyScheduleJson) });
-      if (!availability.isOpen) return Response.json({ error: availability.message }, { status: 409 });
-    }
+    const availability = getStoreAvailability({ orderingMode: settings.orderingMode, weeklySchedule: parseWeeklySchedule(settings.weeklyScheduleJson) });
+    if (!availability.isOpen) return Response.json({ error: availability.message }, { status: 409 });
 
     const productIds = [...new Set(items.map((item) => Number(item.productId)).filter(Number.isInteger))];
     const productRows = await db.select().from(products).where(and(inArray(products.id, productIds), eq(products.available, true)));

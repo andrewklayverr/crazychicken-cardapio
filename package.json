@@ -11,6 +11,7 @@
     "build": "next build --webpack",
     "start": "node scripts/start-hostinger.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "test:store": "node --experimental-strip-types scripts/test-store-rules.mjs",
     "db:generate": "drizzle-kit generate --dialect=mysql",
     "db:migrate": "node scripts/migrate-hostinger.mjs",
     "db:backup": "node scripts/backup-hostinger.mjs",

@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { getDb } from "../../../../db";
 import { storeSettings } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
@@ -8,10 +9,10 @@ import { getStoreAvailability, normalizeOrderingMode, normalizeWeeklySchedule, p
 
 const hex = /^#[0-9a-f]{6}$/i;
 
-function sanitizeAppearance(value: unknown) {
+function sanitizeAppearance(value: unknown, existingValue?: string | null) {
   if (!value || typeof value !== "object") return undefined;
   const source = value as Record<string, unknown>;
-  const current = parseAppearance(null);
+  const current = parseAppearance(existingValue);
   return {
     ...current,
     heroTitle: String(source.heroTitle ?? current.heroTitle).trim().slice(0, 100),
@@ -39,12 +40,12 @@ export async function PATCH(request: Request) {
   try {
     const user = await requireAdmin(["owner", "manager"]); await validateAdminMutation(request);
     const body = await request.json() as Record<string, unknown>;
-    const normalizedAppearance = sanitizeAppearance(body.appearance);
+    const db = getDb();
+    const [existing] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
+    const normalizedAppearance = sanitizeAppearance(body.appearance, existing?.appearanceJson);
     const appearance = normalizedAppearance ? JSON.stringify(normalizedAppearance) : undefined;
     const orderingMode = body.orderingMode !== undefined ? normalizeOrderingMode(body.orderingMode) : undefined;
     const weeklySchedule = body.weeklySchedule !== undefined ? normalizeWeeklySchedule(body.weeklySchedule) : undefined;
-    const db = getDb();
-    const [existing] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
     const effectiveMode = orderingMode ?? normalizeOrderingMode(existing?.orderingMode);
     const effectiveSchedule = weeklySchedule ?? parseWeeklySchedule(existing?.weeklyScheduleJson);
     if (effectiveMode === "automatic" && !Object.values(effectiveSchedule).some((intervals) => intervals.length)) return Response.json({ error: "Configure pelo menos um horário para o modo automático." }, { status: 400 });
@@ -69,6 +70,7 @@ export async function PATCH(request: Request) {
     const [settings] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
     if (!settings) return Response.json({ error: "Não foi possível salvar as configurações." }, { status: 500 });
     await recordAudit({ user, action: "update", entity: "store_settings", entityId: 1 });
-    return Response.json({ settings: publicSettings(settings) });
+    revalidatePath("/", "page");
+    return Response.json({ settings: publicSettings(settings) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return adminErrorResponse(error); }
 }

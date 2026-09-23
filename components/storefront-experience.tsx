@@ -6,6 +6,7 @@ import { ArrowRight, Check, ChevronRight, Clock3, Flame, MapPin, Menu, Minus, Pl
 import { BrandMark } from "./brand-mark";
 import { fallbackProducts, fallbackSettings, type CatalogProduct } from "../lib/catalog";
 import { getStoreAvailability, normalizeOrderingMode, type OrderingMode, type WeeklySchedule } from "../lib/store-hours";
+import { getStoreThemeTokens } from "../lib/store-theme";
 
 type Category = "Todos" | "Frangos" | "Acompanhamentos" | "Molhos" | "Novidades" | "Bebidas";
 type ProductOption = { id: number; groupName: string; label: string; priceDeltaCents: number; required: boolean; selectionMode?: "single" | "multiple"; minSelections?: number; maxSelections?: number };
@@ -25,6 +26,7 @@ type StoreSettings = {
   theme: string;
   appearance: { heroTitle: string; heroDescription: string; accent: string; primary: string; background: string; fontScale: string; density: string; visibleSections: string[] };
   availability?: { isOpen: boolean; message: string };
+  updatedAt?: string | null;
 };
 type DeliveryZone = { id: number; name: string; feeCents: number };
 type CartItem = { lineId: string; product: Product; quantity: number; selectedOptions: ProductOption[]; itemNotes: string };
@@ -113,7 +115,7 @@ function CartDrawer({ cart, settings, zones, orderingOpen, availabilityMessage, 
 export function StorefrontExperience({ initialData }: { initialData: InitialStorefrontData }) {
   const initialSettings: StoreSettings = { ...fallbackSettings, ...initialData.settings, logoKey: initialData.settings.logoKey ?? fallbackSettings.logoKey, whatsappNumber: initialData.settings.whatsappNumber ?? "", orderingMode: normalizeOrderingMode(initialData.settings.orderingMode), weeklySchedule: initialData.settings.weeklySchedule ?? fallbackSettings.weeklySchedule, appearance: { ...fallbackSettings.appearance, ...(initialData.settings.appearance ?? {}) } };
   const [products] = useState<Product[]>(() => (initialData.products.length ? initialData.products : fallbackProducts).map(mapProduct));
-  const [settings] = useState<StoreSettings>(initialSettings);
+  const [settings, setSettings] = useState<StoreSettings>(initialSettings);
   const [zones] = useState<DeliveryZone[]>(initialData.deliveryZones);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -131,10 +133,38 @@ export function StorefrontExperience({ initialData }: { initialData: InitialStor
   useEffect(() => { window.localStorage.setItem("crazy-chicken-cart", JSON.stringify(cart)); }, [cart]);
   useEffect(() => { document.body.style.overflow = menuOpen || cartOpen || Boolean(customizing) ? "hidden" : ""; const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") { setMenuOpen(false); setCartOpen(false); setCustomizing(null); } }; window.addEventListener("keydown", closeOnEscape); return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", closeOnEscape); }; }, [menuOpen, cartOpen, customizing]);
   useEffect(() => { const timer = window.setInterval(() => setClock(Date.now()), 60000); return () => window.clearInterval(timer); }, []);
+  useEffect(() => {
+    let active = true;
+    const refreshConfig = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const response = await fetch("/api/storefront/config", { cache: "no-store" });
+        const data = await response.json() as { settings?: Partial<StoreSettings>; updatedAt?: string | null };
+        if (!active || !data.settings) return;
+        setSettings((current) => ({
+          ...current,
+          ...data.settings,
+          logoKey: data.settings?.logoKey ?? fallbackSettings.logoKey,
+          whatsappNumber: data.settings?.whatsappNumber ?? "",
+          orderingMode: normalizeOrderingMode(data.settings?.orderingMode ?? current.orderingMode),
+          weeklySchedule: data.settings?.weeklySchedule ?? current.weeklySchedule,
+          appearance: { ...current.appearance, ...(data.settings?.appearance ?? {}) },
+          updatedAt: data.updatedAt ?? data.settings?.updatedAt ?? current.updatedAt,
+        }));
+        setClock(Date.now());
+      } catch {
+        setSettings((current) => ({ ...current, orderingMode: "closed", availability: { isOpen: false, message: "Pedidos temporariamente indisponíveis" } }));
+      }
+    };
+    const onVisibility = () => { if (document.visibilityState === "visible") void refreshConfig(); };
+    const timer = window.setInterval(() => void refreshConfig(), 30000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", onVisibility); };
+  }, []);
 
   const availability = useMemo(() => getStoreAvailability(settings, new Date(clock)), [settings, clock]);
   const orderingOpen = availability.isOpen;
-  const themeStyle = { "--yellow": settings.appearance.accent, "--red": settings.appearance.primary, "--cream": settings.appearance.background } as CSSProperties;
+  const themeStyle = getStoreThemeTokens(settings.appearance) as CSSProperties;
 
   const addToCart = (product: Product, selectedOptions: ProductOption[] = [], quantity = 1, itemNotes = "") => setCart((items) => { const optionKey = selectedOptions.map((option) => option.id).sort().join(","); const existing = items.find((item) => item.product.id === product.id && item.selectedOptions.map((option) => option.id).sort().join(",") === optionKey && item.itemNotes === itemNotes); return existing ? items.map((item) => item.lineId === existing.lineId ? { ...item, quantity: Math.min(20, item.quantity + quantity) } : item) : [...items, { lineId: crypto.randomUUID(), product, quantity, selectedOptions, itemNotes }]; });
   const startAdd = (product: Product) => { if (!orderingOpen) { setClosedNotice(availability.message); window.setTimeout(() => setClosedNotice(""), 4000); return; } setCustomizing(product); };
