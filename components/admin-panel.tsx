@@ -121,6 +121,7 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
   const loadAudit = async () => { const response = await adminFetch("/api/admin/audit-log"); if (response.ok) setAudit((await response.json() as { entries: AuditEntry[] }).entries); };
 
   useEffect(() => { void Promise.all([loadOrders(), loadSettings().then(() => setLoaded((value) => ({ ...value, settings: true })))]); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("created") !== "1") return; notify("Conta criada com sucesso. Bem-vindo ao painel."); window.history.replaceState(null, "", "/admin"); }, []);
   useEffect(() => {
     const tasks: Promise<void>[] = [];
     if (section === "produtos" && !loaded.products) tasks.push(loadCatalog().then(() => setLoaded((value) => ({ ...value, products: true }))));

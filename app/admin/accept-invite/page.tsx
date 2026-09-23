@@ -44,11 +44,13 @@ function AcceptInviteForm() {
     const response = await fetch("/api/admin/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, name: form.name, password: form.password, mfaSecret: secret, mfaCode: form.code }) });
     const data = await response.json() as { error?: string; recoveryCodes?: string[] };
     if (!response.ok) { setError(data.error ?? "Não foi possível ativar a conta."); setLoading(false); return; }
-    setRecovery(data.recoveryCodes ?? []);
+    const recoveryCodes = data.recoveryCodes ?? [];
+    setRecovery(recoveryCodes);
     setLoading(false);
+    if (!recoveryCodes.length) router.replace("/admin?created=1");
   }
 
-  if (recovery.length) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Conta ativada</span><h1>Salve seus códigos</h1><p>Guarde estes códigos em local seguro. Cada um pode ser usado uma única vez para recuperar o MFA.</p><div className="recovery-codes">{recovery.map((code) => <code key={code}>{code}</code>)}</div><button className="primary-button" onClick={() => router.replace("/admin")}>Entrar no painel</button></section></main>;
+  if (recovery.length) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Conta criada com sucesso</span><h1>Salve seus códigos</h1><p>Guarde estes códigos em local seguro. Cada um pode ser usado uma única vez para recuperar o MFA.</p><div className="recovery-codes">{recovery.map((code) => <code key={code}>{code}</code>)}</div><button className="primary-button" onClick={() => router.replace("/admin?created=1")}>Entrar no painel</button></section></main>;
   if (!token) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite indisponível</span><h1>Link inválido</h1><p role="alert">Este convite não contém um código válido.</p><button type="button" className="secondary-button" onClick={() => router.replace("/admin/login")}>Voltar ao login</button></section></main>;
   if (checking) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Validando convite</h1><p>Aguarde um instante.</p></section></main>;
   if (!info) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite indisponível</span><h1>Link inválido</h1><p role="alert">{error || "Este convite expirou ou já foi utilizado."}</p><button type="button" className="secondary-button" onClick={() => router.replace("/admin/login")}>Voltar ao login</button></section></main>;
