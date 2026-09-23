@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { adminSessions, adminTokens, adminUsers } from "../../../../db/schema";
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const userId = existing?.id ?? Number(insertResult?.[0]?.insertId);
     if (existing) await db.update(adminUsers).set({ name, role, status: "invited" }).where(eq(adminUsers.id, userId));
     const token = randomToken();
-    await db.insert(adminTokens).values({ userId, type: "invite", tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 24 * 3600000).toISOString() });
+    await db.insert(adminTokens).values({ userId, type: "invite", tokenHash: hashToken(token), expiresAt: sql`DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 24 HOUR)` });
     try { await sendAdminInvite({ email, role, token }); } catch (error) { await db.delete(adminTokens).where(eq(adminTokens.tokenHash, hashToken(token))); if (!existing) await db.delete(adminUsers).where(eq(adminUsers.id, userId)); throw error; }
     await recordAudit({ user: actor, action: existing ? "resend_invite" : "invite", entity: "admin_user", entityId: userId, metadata: { email, role } });
     return Response.json({ ok: true }, { status: 201 });

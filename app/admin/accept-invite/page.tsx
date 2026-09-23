@@ -19,6 +19,7 @@ function AcceptInviteForm() {
   const [recovery, setRecovery] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     if (!token) return;
@@ -26,13 +27,14 @@ function AcceptInviteForm() {
       .then((response) => response.ok ? response.json() as Promise<{ email: string; role: string }> : Promise.reject(new Error("Convite inválido ou expirado.")))
       .then(async (data) => {
         setInfo(data);
+        setChecking(false);
         if (data.role === "owner") {
           const setup = await fetch("/api/admin/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "setup", token }) });
           const setupData = await setup.json() as { secret?: string; uri?: string };
           if (setup.ok && setupData.secret) { setSecret(setupData.secret); setUri(setupData.uri ?? ""); }
         }
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : "Convite inválido."));
+      .catch((reason) => { setError(reason instanceof Error ? reason.message : "Convite inválido."); setChecking(false); });
   }, [token]);
 
   async function submit(event: FormEvent) {
@@ -47,6 +49,9 @@ function AcceptInviteForm() {
   }
 
   if (recovery.length) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Conta ativada</span><h1>Salve seus códigos</h1><p>Guarde estes códigos em local seguro. Cada um pode ser usado uma única vez para recuperar o MFA.</p><div className="recovery-codes">{recovery.map((code) => <code key={code}>{code}</code>)}</div><button className="primary-button" onClick={() => router.replace("/admin")}>Entrar no painel</button></section></main>;
+  if (!token) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite indisponível</span><h1>Link inválido</h1><p role="alert">Este convite não contém um código válido.</p><button type="button" className="secondary-button" onClick={() => router.replace("/admin/login")}>Voltar ao login</button></section></main>;
+  if (checking) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Validando convite</h1><p>Aguarde um instante.</p></section></main>;
+  if (!info) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite indisponível</span><h1>Link inválido</h1><p role="alert">{error || "Este convite expirou ou já foi utilizado."}</p><button type="button" className="secondary-button" onClick={() => router.replace("/admin/login")}>Voltar ao login</button></section></main>;
 
-  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Ative seu acesso</h1>{info ? <p>{info.email}<br />Função: {info.role === "owner" ? "proprietário" : info.role === "manager" ? "gerente" : "atendente"}</p> : <p>{error || "Validando convite..."}</p>}<label className="form-label">Seu nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label className="form-label">Nova senha<input type="password" minLength={12} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>{info?.role === "owner" && <><p className="admin-help">No aplicativo autenticador, adicione a conta usando este código/chave:</p><code className="mfa-secret">{secret}</code><p className="admin-help">URI: {uri}</p><label className="form-label">Código de confirmação<input inputMode="numeric" required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label></>}{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={!info || loading}>{loading ? "Ativando..." : "Criar minha conta"}</button></form></main>;
+  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Ative seu acesso</h1><p>{info.email}<br />Função: {info.role === "owner" ? "proprietário" : info.role === "manager" ? "gerente" : "atendente"}</p><label className="form-label">Seu nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label className="form-label">Nova senha<input type="password" minLength={12} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>{info.role === "owner" && <><p className="admin-help">No aplicativo autenticador, adicione a conta usando este código/chave:</p><code className="mfa-secret">{secret}</code><p className="admin-help">URI: {uri}</p><label className="form-label">Código de confirmação<input inputMode="numeric" required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label></>}{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Ativando..." : "Criar minha conta"}</button></form></main>;
 }

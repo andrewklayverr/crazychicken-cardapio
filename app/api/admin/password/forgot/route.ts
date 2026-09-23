@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { adminTokens, adminUsers } from "../../../../../db/schema";
 import { adminErrorResponse } from "../../../../../lib/admin";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const [user] = await getDb().select().from(adminUsers).where(eq(adminUsers.email, email)).limit(1);
     if (user?.status === "active") {
       const token = randomToken();
-      await getDb().insert(adminTokens).values({ userId: user.id, type: "password_reset", tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 30 * 60000).toISOString() });
+      await getDb().insert(adminTokens).values({ userId: user.id, type: "password_reset", tokenHash: hashToken(token), expiresAt: sql`DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 30 MINUTE)` });
       await sendPasswordReset({ email, token });
     }
     return Response.json({ ok: true });

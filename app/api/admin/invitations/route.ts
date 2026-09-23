@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { adminRecoveryCodes, adminTokens, adminUsers } from "../../../../db/schema";
 import { adminErrorResponse } from "../../../../lib/admin";
@@ -8,8 +8,8 @@ import { startAdminSession } from "../../../../lib/auth";
 export async function GET(request: Request) {
   try {
     const raw = new URL(request.url).searchParams.get("token") ?? "";
-    const [token] = await getDb().select({ userId: adminTokens.userId, expiresAt: adminTokens.expiresAt }).from(adminTokens).where(and(eq(adminTokens.type, "invite"), eq(adminTokens.tokenHash, hashToken(raw)), isNull(adminTokens.usedAt))).limit(1);
-    if (!token || new Date(token.expiresAt).getTime() < Date.now()) return Response.json({ error: "Convite inválido ou expirado." }, { status: 410 });
+    const [token] = await getDb().select({ userId: adminTokens.userId }).from(adminTokens).where(and(eq(adminTokens.type, "invite"), eq(adminTokens.tokenHash, hashToken(raw)), isNull(adminTokens.usedAt), gt(adminTokens.expiresAt, sql`CURRENT_TIMESTAMP`))).limit(1);
+    if (!token) return Response.json({ error: "Convite inválido ou expirado." }, { status: 410 });
     const [user] = await getDb().select({ email: adminUsers.email, role: adminUsers.role }).from(adminUsers).where(eq(adminUsers.id, token.userId)).limit(1);
     return user ? Response.json({ email: user.email, role: user.role }) : Response.json({ error: "Convite inválido." }, { status: 410 });
   } catch (error) { return adminErrorResponse(error); }
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
   try {
     const body = await request.json() as { token?: string; name?: string; password?: string; mfaSecret?: string; mfaCode?: string };
     const raw = String(body.token ?? "");
-    const [token] = await getDb().select().from(adminTokens).where(and(eq(adminTokens.type, "invite"), eq(adminTokens.tokenHash, hashToken(raw)), isNull(adminTokens.usedAt))).limit(1);
-    if (!token || new Date(token.expiresAt).getTime() < Date.now()) return Response.json({ error: "Convite inválido ou expirado." }, { status: 410 });
+    const [token] = await getDb().select().from(adminTokens).where(and(eq(adminTokens.type, "invite"), eq(adminTokens.tokenHash, hashToken(raw)), isNull(adminTokens.usedAt), gt(adminTokens.expiresAt, sql`CURRENT_TIMESTAMP`))).limit(1);
+    if (!token) return Response.json({ error: "Convite inválido ou expirado." }, { status: 410 });
     const [user] = await getDb().select().from(adminUsers).where(eq(adminUsers.id, token.userId)).limit(1);
     if (!user || user.status !== "invited") return Response.json({ error: "Este convite já foi utilizado." }, { status: 409 });
     if ((body as { action?: string }).action === "setup") {
