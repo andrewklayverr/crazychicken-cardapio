@@ -3,16 +3,13 @@ import { getDb } from "../../../db";
 import { deliveryZones, orders, orderItems, products, productOptions, storeSettings } from "../../../db/schema";
 import { getStoreAvailability, parseWeeklySchedule } from "../../../lib/store-hours";
 import { buildWhatsappUrl } from "../../../lib/whatsapp-order";
+import { getClientIp, isTrustedRequestOrigin } from "../../../lib/request-security";
+import { takeMemoryRateLimit } from "../../../lib/memory-rate-limit";
 
 const MAX_ITEMS = 40;
 const text = (value: unknown, max = 240) => typeof value === "string" ? value.trim().slice(0, max) : "";
 const normalize = (value: string) => value.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
 const phoneDigits = (value: string) => value.replace(/\D/g, "");
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function clientKey(request: Request) {
-  return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
-}
 
 function validateOptionGroups(allOptions: Array<{ id: number; groupName: string; required: boolean; selectionMode: string; minSelections: number; maxSelections: number }>, selectedIds: number[]) {
   const groups = new Map<string, typeof allOptions>();
@@ -30,12 +27,8 @@ function validateOptionGroups(allOptions: Array<{ id: number; groupName: string;
 
 export async function POST(request: Request) {
   try {
-    const key = clientKey(request);
-    const now = Date.now();
-    const current = attempts.get(key);
-    if (!current || current.resetAt < now) attempts.set(key, { count: 1, resetAt: now + 10 * 60 * 1000 });
-    else if (current.count >= 10) return Response.json({ error: "Muitos pedidos em pouco tempo. Aguarde alguns minutos." }, { status: 429 });
-    else current.count += 1;
+    if (!isTrustedRequestOrigin(request)) return Response.json({ error: "Requisição inválida." }, { status: 403 });
+    if (!takeMemoryRateLimit("orders:create", getClientIp(request), 10, 10 * 60 * 1000)) return Response.json({ error: "Muitos pedidos em pouco tempo. Aguarde alguns minutos." }, { status: 429 });
 
     const payload = await request.json().catch(() => ({})) as {
       idempotencyKey?: string;
@@ -95,7 +88,7 @@ export async function POST(request: Request) {
     if (fulfillmentType === "delivery" && zones.length > 0 && !zone) return Response.json({ error: "Selecione um bairro de entrega válido." }, { status: 400 });
     const deliveryFeeCents = fulfillmentType === "delivery" ? (zone?.feeCents ?? settings?.defaultDeliveryFeeCents ?? 0) : 0;
     const totalCents = subtotalCents + deliveryFeeCents;
-    const code = `CC-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+    const code = `CC-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
     const result = await db.insert(orders).values({ code, status: "received", fulfillmentType, customerName, customerPhone, address: address || null, neighborhood: neighborhood || null, notes: notes || null, subtotalCents, deliveryFeeCents, totalCents, idempotencyKey });
     const [saved] = await db.select().from(orders).where(eq(orders.id, Number(result[0].insertId))).limit(1);
     if (!saved) throw new Error("Não foi possível salvar o pedido.");

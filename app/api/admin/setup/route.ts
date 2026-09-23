@@ -4,6 +4,7 @@ import { hashPassword, hashToken, normalizeEmail, validatePassword } from "../..
 import { startAdminSession } from "../../../../lib/auth";
 import { RecoveryError, recoveryOrigin, takeAdminAttempt } from "../../../../lib/admin-recovery";
 import { timingSafeEqual } from "node:crypto";
+import { getClientIp } from "../../../../lib/request-security";
 
 export async function POST(request: Request) {
   if (!recoveryOrigin(request, process.env.APP_URL)) return Response.json({ error: "Requisição inválida." }, { status: 403 });
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     const expiresAt = Date.parse(process.env.ADMIN_SETUP_EXPIRES_AT ?? "");
     if (!configuredCode || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) throw new RecoveryError(404, "A configuração inicial não está disponível.");
     const pool = getPool();
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getClientIp(request);
     await takeAdminAttempt(pool, "initial-owner", ip, "setup");
     const code = String(body?.code ?? "").trim();
     if (!timingSafeEqual(Buffer.from(hashToken(code)), Buffer.from(hashToken(configuredCode))) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new RecoveryError(400, "Código ou dados inválidos.");

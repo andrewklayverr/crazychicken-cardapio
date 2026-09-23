@@ -13,7 +13,10 @@ async function sendEmail(to: string, subject: string, html: string) {
 function appUrl() {
   const value = process.env.APP_URL;
   if (!value) throw new Error("Configure APP_URL na Hostinger.");
-  return value.replace(/\/$/, "");
+  const parsed = new URL(value);
+  if (process.env.NODE_ENV === "production" && parsed.protocol !== "https:") throw new Error("APP_URL precisa usar HTTPS em produção.");
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error("APP_URL inválida.");
+  return parsed.origin;
 }
 
 export async function sendAdminInvite(input: { email: string; role: string; token: string; name?: string }) {

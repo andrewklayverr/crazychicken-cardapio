@@ -19,8 +19,9 @@ export function recoveryConfig(env: NodeJS.ProcessEnv, now = Date.now()) {
 export function recoveryOrigin(request: Request, appUrl: string | undefined) {
   try {
     const expected = new URL(appUrl ?? "");
-    const origin = request.headers.get("origin");
-    return expected.protocol === "https:" && origin === expected.origin;
+    const supplied = request.headers.get("origin") ?? request.headers.get("referer");
+    if (!supplied || request.headers.get("sec-fetch-site") === "cross-site") return false;
+    return expected.protocol === "https:" && new URL(supplied).origin === expected.origin;
   } catch { return false; }
 }
 

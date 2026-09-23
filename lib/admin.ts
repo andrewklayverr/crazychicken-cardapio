@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { adminAllowlist, auditLog } from "../db/schema";
 import { configuredAdminEmails, getCurrentUser, type AdminRole, type AdminUser } from "./auth";
+import { RecoveryError } from "./admin-recovery";
+import { RequestSecurityError } from "./request-security";
 
 export class AdminAuthError extends Error {
   status: number;
@@ -32,7 +34,12 @@ export async function requireRole(role: AdminRole) {
 
 export function adminErrorResponse(error: unknown) {
   if (error instanceof AdminAuthError) return Response.json({ error: error.message }, { status: error.status });
-  return Response.json({ error: error instanceof Error ? error.message : "Erro inesperado." }, { status: 500 });
+  if (error instanceof RequestSecurityError || error instanceof RecoveryError) return Response.json({ error: error.message }, { status: error.status });
+  console.error("[admin-api] operation failed", {
+    name: error instanceof Error ? error.name : "UnknownError",
+    code: typeof error === "object" && error && "code" in error ? String(error.code) : "unknown",
+  });
+  return Response.json({ error: "Não foi possível concluir a operação. Tente novamente mais tarde." }, { status: 500 });
 }
 
 export function roleCanManageCatalog(role: AdminRole) { return role === "owner" || role === "manager"; }

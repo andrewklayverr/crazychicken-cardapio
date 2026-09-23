@@ -5,7 +5,7 @@ import { getChatGPTUser, type ChatGPTUser } from "../app/chatgpt-auth";
 import { getDb } from "../db";
 import { adminSessions, adminUsers } from "../db/schema";
 import { normalizeEmail, hashToken, verifyPassword, verifyTotp } from "./admin-security";
-import { isTrustedRequestOrigin } from "./request-security";
+import { isTrustedRequestOrigin, RequestSecurityError, safeStringEqual } from "./request-security";
 
 export type { ChatGPTUser } from "../app/chatgpt-auth";
 export type AdminRole = "owner" | "manager" | "attendant";
@@ -23,11 +23,18 @@ const sessionDays = 7;
 const idleHours = 12;
 
 function secret() {
-  return process.env.AUTH_SECRET || process.env.ADMIN_PASSWORD || "change-this-secret-before-production";
+  const value = process.env.AUTH_SECRET?.trim() ?? "";
+  if (value.length >= 32 && value !== "change-this-secret-before-production" && value !== "troque-por-um-segredo-longo-e-aleatorio") return value;
+  if (process.env.NODE_ENV === "production") throw new Error("AUTH_SECRET precisa conter pelo menos 32 caracteres aleatórios.");
+  return value || "development-only-secret-do-not-use-in-production";
 }
 
 export function configuredAdminEmails() {
   return (process.env.ADMIN_EMAILS ?? "").split(",").map(normalizeEmail).filter(Boolean);
+}
+
+function legacyAdminAuthEnabled() {
+  return process.env.ALLOW_LEGACY_ADMIN_AUTH === "true" || process.env.NODE_ENV !== "production";
 }
 
 function sign(value: string) {
@@ -85,6 +92,7 @@ export async function getCurrentUser(): Promise<AdminUser | null> {
     // Permite a migração progressiva em instalações antigas sem as tabelas novas.
   }
   const legacyEmail = decodeLegacySession(token);
+  if (!legacyAdminAuthEnabled()) return null;
   // Once an individual account exists, old shared-password cookies must not bypass revocation.
   if (legacyEmail) {
     try { if (await findAdminUserByEmail(legacyEmail)) return null; }
@@ -112,6 +120,7 @@ export async function authenticateAdmin(emailValue: string, password: string, mf
     await getDb().update(adminUsers).set({ failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date().toISOString() }).where(eq(adminUsers.id, row.id));
     return { user: fromRow(row), mfaRequired: false, legacy: false };
   }
+  if (!legacyAdminAuthEnabled()) return null;
   if (!configuredAdminEmails().includes(email)) return null;
   const encodedHash = process.env.ADMIN_PASSWORD_HASH;
   let valid = false;
@@ -172,12 +181,18 @@ export async function endAdminSession() {
 }
 
 export async function validateAdminMutation(request: Request) {
-  const origin = isTrustedRequestOrigin(request) ? null : request.headers.get("origin");
-  if (origin && new URL(origin).host !== new URL(request.url).host) throw new Error("Origem da requisição inválida.");
+  if (!isTrustedRequestOrigin(request)) throw new RequestSecurityError();
   const csrf = request.headers.get("x-csrf-token");
-  const token = (await cookies()).get(cookieName)?.value;
-  const csrfCookie = (await cookies()).get(csrfCookieName)?.value;
-  if (!csrf || !csrfCookie || csrf !== csrfCookie || !token) throw new Error("Token de segurança inválido.");
-  const [session] = await getDb().select({ csrfTokenHash: adminSessions.csrfTokenHash }).from(adminSessions).where(and(eq(adminSessions.tokenHash, hashToken(token)), isNull(adminSessions.revokedAt))).limit(1);
-  if (!session || session.csrfTokenHash !== hashToken(csrf)) throw new Error("Token de segurança inválido.");
+  const store = await cookies();
+  const token = store.get(cookieName)?.value;
+  const csrfCookie = store.get(csrfCookieName)?.value;
+  if (!csrf || !csrfCookie || !safeStringEqual(csrf, csrfCookie) || !token) throw new RequestSecurityError("Token de segurança inválido.");
+  const [session] = await getDb().select({ csrfTokenHash: adminSessions.csrfTokenHash, expiresAt: adminSessions.expiresAt, idleExpiresAt: adminSessions.idleExpiresAt }).from(adminSessions).where(and(eq(adminSessions.tokenHash, hashToken(token)), isNull(adminSessions.revokedAt))).limit(1);
+  const now = Date.now();
+  if (!session
+    || new Date(session.expiresAt).getTime() <= now
+    || new Date(session.idleExpiresAt).getTime() <= now
+    || !safeStringEqual(session.csrfTokenHash, hashToken(csrf))) {
+    throw new RequestSecurityError("Token de segurança inválido ou sessão expirada.");
+  }
 }

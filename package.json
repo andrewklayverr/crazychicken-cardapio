@@ -12,6 +12,7 @@
     "start": "node scripts/start-hostinger.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "test:store": "node --experimental-strip-types scripts/test-store-rules.mjs",
+    "test:security": "node --experimental-strip-types scripts/test-security.mjs",
     "test:whatsapp": "node --experimental-strip-types scripts/test-whatsapp-order.mjs",
     "db:generate": "drizzle-kit generate --dialect=mysql",
     "db:migrate": "node scripts/migrate-hostinger.mjs",

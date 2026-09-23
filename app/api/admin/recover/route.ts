@@ -1,6 +1,7 @@
 import { getPool } from "../../../../db";
 import { RecoveryError, recoverOwner, recoveryOrigin } from "../../../../lib/admin-recovery";
 import { clearLoginFailures } from "../../../../lib/rate-limit";
+import { getClientIp } from "../../../../lib/request-security";
 
 export const runtime = "nodejs";
 
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
   const reply = (data: object, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
   if (!recoveryOrigin(request, process.env.APP_URL)) return reply({ error: "Origem da requisição inválida." }, 403);
   try {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getClientIp(request);
     const body = await request.json().catch(() => null);
     const email = await recoverOwner(getPool(), body, ip);
     clearLoginFailures(email, ip);

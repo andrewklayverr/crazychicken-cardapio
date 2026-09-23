@@ -2,13 +2,15 @@ import { authenticateAdmin, startAdminSession, startLegacyAdminSession } from ".
 import { getPool } from "../../../../db";
 import { takeAdminAttempt, RecoveryError } from "../../../../lib/admin-recovery";
 import { hashToken } from "../../../../lib/admin-security";
+import { getClientIp, isTrustedRequestOrigin } from "../../../../lib/request-security";
 
 export async function POST(request: Request) {
   try {
+    if (!isTrustedRequestOrigin(request)) return Response.json({ error: "Requisição inválida." }, { status: 403 });
     const body = await request.json().catch(() => ({})) as { email?: string; password?: string; mfaCode?: string };
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const ip = getClientIp(request);
     if (!email || !password) return Response.json({ error: "E-mail ou senha invalidos." }, { status: 401 });
     await takeAdminAttempt(getPool(), email, ip, "login");
     const result = await authenticateAdmin(email, password, String(body.mfaCode ?? "").trim() || undefined);
