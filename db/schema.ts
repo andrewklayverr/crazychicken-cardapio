@@ -44,6 +44,8 @@ export const storeSettings = mysqlTable("store_settings", {
   whatsappNumber: varchar("whatsapp_number", { length: 30 }),
   address: varchar("address", { length: 255 }).notNull().default("Rua 7 de Setembro, 247 · Suzano"),
   openingHours: varchar("opening_hours", { length: 140 }).notNull().default("18h às 23h"),
+  orderingMode: varchar("ordering_mode", { length: 20 }).notNull().default("open"),
+  weeklyScheduleJson: text("weekly_schedule_json"),
   deliveryEnabled: boolean("delivery_enabled").notNull().default(true),
   pickupEnabled: boolean("pickup_enabled").notNull().default(true),
   minimumOrderCents: int("minimum_order_cents").notNull().default(0),

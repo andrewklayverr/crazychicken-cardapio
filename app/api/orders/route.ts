@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { deliveryZones, orders, orderItems, products, productOptions, storeSettings } from "../../../db/schema";
+import { getStoreAvailability, parseWeeklySchedule } from "../../../lib/store-hours";
 
 const MAX_ITEMS = 40;
 const text = (value: unknown, max = 240) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -96,6 +97,10 @@ export async function POST(request: Request) {
     if (existing[0]) {
       const existingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, existing[0].id));
       return Response.json({ order: existing[0], whatsappUrl: buildWhatsappUrl(existing[0], existingItems, settings?.whatsappNumber), duplicate: true });
+    }
+    if (settings) {
+      const availability = getStoreAvailability({ orderingMode: settings.orderingMode, weeklySchedule: parseWeeklySchedule(settings.weeklyScheduleJson) });
+      if (!availability.isOpen) return Response.json({ error: availability.message }, { status: 409 });
     }
 
     const productIds = [...new Set(items.map((item) => Number(item.productId)).filter(Number.isInteger))];

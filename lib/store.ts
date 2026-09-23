@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "../db";
 import { categories, deliveryZones, productOptions, products, storeSettings } from "../db/schema";
 import { fallbackCategories, fallbackProducts, fallbackSettings, type CatalogProduct } from "./catalog";
+import { getStoreAvailability, parseWeeklySchedule } from "./store-hours";
 
 export function assetUrl(key: string | null | undefined) {
   if (!key) return "/hero-food.jpeg";
@@ -47,11 +48,11 @@ export async function getStorefront() {
     return {
       categories: categoryRows,
       products: mappedProducts,
-      settings: setting ? { ...fallbackSettings, ...setting, whatsappNumber: setting.whatsappNumber ?? "", logoKey: setting.logoKey || fallbackSettings.logoKey, appearance: parseAppearance(setting.appearanceJson) } : fallbackSettings,
+      settings: setting ? (() => { const weeklySchedule = parseWeeklySchedule(setting.weeklyScheduleJson); const normalized = { ...fallbackSettings, ...setting, whatsappNumber: setting.whatsappNumber ?? "", logoKey: setting.logoKey || fallbackSettings.logoKey, orderingMode: setting.orderingMode ?? "open", weeklySchedule, appearance: parseAppearance(setting.appearanceJson) }; return { ...normalized, availability: getStoreAvailability(normalized) }; })() : { ...fallbackSettings, availability: getStoreAvailability(fallbackSettings) },
       deliveryZones: zoneRows.map((zone) => ({ id: zone.id, name: zone.name, feeCents: zone.feeCents })),
     };
   } catch {
-    return { categories: fallbackCategories, products: fallbackProducts, settings: fallbackSettings };
+    return { categories: fallbackCategories, products: fallbackProducts, settings: { ...fallbackSettings, availability: getStoreAvailability(fallbackSettings) }, deliveryZones: [] };
   }
 }
 

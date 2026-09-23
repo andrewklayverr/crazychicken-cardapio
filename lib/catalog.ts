@@ -41,6 +41,8 @@ export const fallbackSettings = {
   whatsappNumber: "",
   address: "Rua 7 de Setembro, 247 · Suzano",
   openingHours: "18h às 23h",
+  orderingMode: "open" as const,
+  weeklySchedule: { sunday: [], monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [] },
   deliveryEnabled: true,
   pickupEnabled: true,
   minimumOrderCents: 0,

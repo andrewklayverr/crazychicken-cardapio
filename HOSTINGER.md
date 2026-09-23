@@ -1,5 +1,17 @@
 # Publicação do Crazy Chicken na Hostinger
 
+## Atualização do painel e funcionamento da loja
+
+Antes de publicar a versão mobile-first do painel, importe uma vez o arquivo `db/migrations/004_admin_operations.sql` no phpMyAdmin da Hostinger. A migração adiciona o modo de funcionamento e a agenda semanal à tabela `store_settings`; ela começa em `open`, portanto não fecha a loja após a atualização.
+
+Depois da importação, publique o código e confira em **Admin > Configurações**:
+
+- `Aberto manualmente`: aceita pedidos em qualquer horário;
+- `Fechado manualmente`: mantém o cardápio visível, mas bloqueia novos pedidos;
+- `Automático`: aplica os intervalos semanais no fuso `America/Sao_Paulo`, inclusive horários que atravessam a meia-noite.
+
+O bloqueio é validado novamente pela API e responde HTTP 409 quando a loja está fechada. Teste também bairros, taxas, detalhes do pedido, equipe, logout, aparência e telas de 320, 375 e 414 px. Importe a migração antes do deploy porque a versão nova passa a consultar essas duas colunas.
+
 ## Recuperar o proprietário sem e-mail ou SQL
 
 Após publicar esta versão, execute **localmente** na pasta do projeto:
