@@ -42,6 +42,7 @@ export const storeSettings = mysqlTable("store_settings", {
   brandName: varchar("brand_name", { length: 100 }).notNull().default("Crazy Chicken"),
   logoKey: varchar("logo_key", { length: 255 }),
   whatsappNumber: varchar("whatsapp_number", { length: 30 }),
+  whatsappTemplate: varchar("whatsapp_template", { length: 20 }).notNull().default("complete"),
   address: varchar("address", { length: 255 }).notNull().default("Rua 7 de Setembro, 247 · Suzano"),
   openingHours: varchar("opening_hours", { length: 140 }).notNull().default("18h às 23h"),
   orderingMode: varchar("ordering_mode", { length: 20 }).notNull().default("open"),

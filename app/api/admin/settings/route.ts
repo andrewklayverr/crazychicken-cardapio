@@ -6,6 +6,7 @@ import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/a
 import { validateAdminMutation } from "../../../../lib/auth";
 import { parseAppearance } from "../../../../lib/store";
 import { getStoreAvailability, normalizeOrderingMode, normalizeWeeklySchedule, parseWeeklySchedule } from "../../../../lib/store-hours";
+import { isWhatsAppTemplate, normalizeWhatsAppTemplate } from "../../../../lib/whatsapp-order";
 
 const hex = /^#[0-9a-f]{6}$/i;
 
@@ -46,6 +47,7 @@ export async function PATCH(request: Request) {
     const appearance = normalizedAppearance ? JSON.stringify(normalizedAppearance) : undefined;
     const orderingMode = body.orderingMode !== undefined ? normalizeOrderingMode(body.orderingMode) : undefined;
     const weeklySchedule = body.weeklySchedule !== undefined ? normalizeWeeklySchedule(body.weeklySchedule) : undefined;
+    if (body.whatsappTemplate !== undefined && !isWhatsAppTemplate(body.whatsappTemplate)) return Response.json({ error: "Modelo de mensagem inválido." }, { status: 400 });
     const effectiveMode = orderingMode ?? normalizeOrderingMode(existing?.orderingMode);
     const effectiveSchedule = weeklySchedule ?? parseWeeklySchedule(existing?.weeklyScheduleJson);
     if (effectiveMode === "automatic" && !Object.values(effectiveSchedule).some((intervals) => intervals.length)) return Response.json({ error: "Configure pelo menos um horário para o modo automático." }, { status: 400 });
@@ -53,6 +55,7 @@ export async function PATCH(request: Request) {
       ...(body.brandName !== undefined ? { brandName: String(body.brandName).slice(0, 80) } : {}),
       ...(body.logoKey !== undefined ? { logoKey: body.logoKey ? String(body.logoKey) : null } : {}),
       ...(body.whatsappNumber !== undefined ? { whatsappNumber: String(body.whatsappNumber).replace(/\D/g, "").slice(0, 15) } : {}),
+      ...(body.whatsappTemplate !== undefined ? { whatsappTemplate: normalizeWhatsAppTemplate(body.whatsappTemplate) } : {}),
       ...(body.address !== undefined ? { address: String(body.address).slice(0, 240) } : {}),
       ...(body.openingHours !== undefined ? { openingHours: String(body.openingHours).slice(0, 120) } : {}),
       ...(orderingMode !== undefined ? { orderingMode } : {}),

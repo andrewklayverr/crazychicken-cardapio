@@ -39,6 +39,7 @@ export const fallbackSettings = {
   brandName: "Crazy Chicken",
   logoKey: "/logo-frango.png",
   whatsappNumber: "",
+  whatsappTemplate: "complete" as const,
   address: "Rua 7 de Setembro, 247 · Suzano",
   openingHours: "18h às 23h",
   orderingMode: "open" as const,

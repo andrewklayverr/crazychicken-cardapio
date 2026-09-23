@@ -43,6 +43,12 @@ Use um plano Hostinger Business ou Cloud com Node.js e configure no hPanel:
 
 Não publique arquivos `.env`, senhas ou a pasta `backups/` no repositório.
 
+## Modelos de mensagem do WhatsApp
+
+Depois de fazer backup, importe `db/migrations/005_whatsapp_templates.sql` no phpMyAdmin antes de publicar esta versao. O campo recebe `complete` automaticamente para manter o formato completo nas instalacoes existentes.
+
+Em **Admin > Configuracoes**, escolha **Completo**, **Compacto** ou **Atendimento rapido** e salve. A escolha fica em `store_settings` e e usada pelo servidor tanto em pedidos novos quanto quando o mesmo pedido e reenviado por idempotencia. O texto usa quebras de linha reais e continua sendo aberto pelo WhatsApp via `wa.me`.
+
 ## MariaDB
 
 O banco da aplicação é o MariaDB/MySQL da Hostinger. O phpMyAdmin é somente a interface de manutenção para importar migrações, consultar registros, fazer backup e diagnosticar problemas; o painel e a loja acessam o banco diretamente pela `DATABASE_URL`.

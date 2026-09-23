@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { deliveryZones, orders, orderItems, products, productOptions, storeSettings } from "../../../db/schema";
 import { getStoreAvailability, parseWeeklySchedule } from "../../../lib/store-hours";
+import { buildWhatsappUrl } from "../../../lib/whatsapp-order";
 
 const MAX_ITEMS = 40;
 const text = (value: unknown, max = 240) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -11,39 +12,6 @@ const attempts = new Map<string, { count: number; resetAt: number }>();
 
 function clientKey(request: Request) {
   return request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
-}
-
-function parseStoredOptions(value: string) {
-  try {
-    const parsed = JSON.parse(value) as { options?: string[] } | string[];
-    return Array.isArray(parsed) ? parsed : Array.isArray(parsed.options) ? parsed.options : [];
-  } catch {
-    return [];
-  }
-}
-
-function buildWhatsappUrl(order: typeof orders.$inferSelect, items: Array<typeof orderItems.$inferSelect>, whatsappNumber: string | null | undefined) {
-  const phone = phoneDigits(whatsappNumber ?? "");
-  if (!phone) return null;
-  const lines = items.map((item) => {
-    const options = parseStoredOptions(item.optionsJson);
-    const suffix = [options.length ? ` (${options.join(", ")})` : "", item.itemNotes ? ` — Obs.: ${item.itemNotes}` : ""].join("");
-    return `• ${item.quantity}x ${item.productName}${suffix} — ${money(item.unitPriceCents * item.quantity)}`;
-  });
-  const message = [
-    `Olá! Quero confirmar o pedido ${order.code}.`,
-    "",
-    ...lines,
-    "",
-    `Cliente: ${order.customerName}`,
-    `Telefone: ${order.customerPhone}`,
-    order.fulfillmentType === "delivery" ? `Entrega: ${order.address ?? ""}${order.neighborhood ? ` — ${order.neighborhood}` : ""}` : "Retirada no balcão",
-    order.notes ? `Observações: ${order.notes}` : "",
-    `Subtotal: ${money(order.subtotalCents)}`,
-    `Taxa de entrega: ${money(order.deliveryFeeCents)}`,
-    `Total: ${money(order.totalCents)}`,
-  ].filter(Boolean).join("\n");
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 function validateOptionGroups(allOptions: Array<{ id: number; groupName: string; required: boolean; selectionMode: string; minSelections: number; maxSelections: number }>, selectedIds: number[]) {
@@ -97,7 +65,7 @@ export async function POST(request: Request) {
     const existing = await db.select().from(orders).where(eq(orders.idempotencyKey, idempotencyKey)).limit(1);
     if (existing[0]) {
       const existingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, existing[0].id));
-      return Response.json({ order: existing[0], whatsappUrl: buildWhatsappUrl(existing[0], existingItems, settings?.whatsappNumber), duplicate: true });
+      return Response.json({ order: existing[0], whatsappUrl: buildWhatsappUrl(existing[0], existingItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick"), duplicate: true });
     }
     const availability = getStoreAvailability({ orderingMode: settings.orderingMode, weeklySchedule: parseWeeklySchedule(settings.weeklyScheduleJson) });
     if (!availability.isOpen) return Response.json({ error: availability.message }, { status: 409 });
@@ -133,7 +101,7 @@ export async function POST(request: Request) {
     if (!saved) throw new Error("Não foi possível salvar o pedido.");
     await db.insert(orderItems).values(rows.map((row) => ({ orderId: saved.id, productId: row.product.id, productName: row.product.name, quantity: row.quantity, unitPriceCents: row.unitPriceCents, optionsJson: JSON.stringify({ options: row.selectedOptions.map((option) => option.label) }), itemNotes: row.itemNotes || null })));
     const savedItems = await db.select().from(orderItems).where(eq(orderItems.orderId, saved.id));
-    return Response.json({ order: saved, whatsappUrl: buildWhatsappUrl(saved, savedItems, settings?.whatsappNumber) }, { status: 201 });
+    return Response.json({ order: saved, whatsappUrl: buildWhatsappUrl(saved, savedItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick") }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível registrar o pedido.";
     if (message.includes("opções") || message.includes("produto") || message.includes("bairro")) return Response.json({ error: message }, { status: 400 });
