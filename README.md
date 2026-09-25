@@ -1,126 +1,260 @@
-# vinext-starter
+# Crazy Chicken — cardápio digital e operação
 
-A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
+<p align="center">
+  <strong>Uma vitrine digital para vender pelo WhatsApp e um painel para operar a loja em um só lugar.</strong>
+</p>
 
-## Prerequisites
+<p align="center">
+  <a href="https://crazychicken247.com.br">Ver aplicação</a> ·
+  <a href="https://crazychicken247.com.br/admin/login">Acessar painel</a> ·
+  <a href="SECURITY.md">Reportar vulnerabilidade</a>
+</p>
 
-- Node.js `>=22.13.0`
-- Portable: Windows, macOS, or Linux; no Bash required
-- Managed Linux: managed Linux runtime with Bash, `flock`, `curl`, `sha256sum`, and GNU `timeout`
-- Git is required only for publishing
+## Sobre o projeto
 
-## Sites Lifecycle
+O Crazy Chicken é uma aplicação web completa para restaurantes que precisam publicar um cardápio, receber pedidos e acompanhar a operação sem depender de uma plataforma de marketplace.
 
-The Sites initializer copies the shared starter and selects managed-linux only when `SITES_MANAGED_LINUX_CONTAINER=1`; otherwise it selects portable. It saves the selection only in ignored `.sites-runtime/execution-profile.json`. Both profiles copy/configure first, then use the plugin's separate `install-dependencies.mjs` step to measure installation independently. Edit source under `app/` and follow the Sites skill for installation, preview, builds, and publishing.
+O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dados pelo WhatsApp. A equipe administra catálogo, aparência, horários, bairros, taxas, pedidos e acessos individuais em um painel protegido.
 
-Whenever reopening or moving a checkout, run `node <plugin-root>/scripts/configure-execution-profile.mjs` before project commands. Profile changes do not alter tracked source or require reinstalling otherwise-valid dependencies; restart an existing preview to use the new selection. Do not commit or upload `.sites-runtime/`.
+> Marca: **Crazy Chicken**<br>
+> Domínio atual: **[crazychicken247.com.br](https://crazychicken247.com.br)**<br>
+> Banco de dados: **MariaDB/MySQL na Hostinger**
 
-This starter does not use `wrangler.jsonc`.
+## O que a aplicação oferece
 
-`install:ci` runs `npm ci` once against the shared lockfile, disables parent-workspace discovery, and includes required dev/optional dependencies despite production/omit settings. Sharp defaults to prebuilt binaries unless explicitly configured otherwise. Do not overlap installers.
+### Para clientes
 
-- **Portable:** Preserve host HOME, npm cache, registry, proxy, temporary paths, retry/concurrency settings, and lifecycle-script policy. Use `--prefer-offline --no-audit --no-fund`.
-- **Managed Linux:** Use the existing project-local HOME/cache/tmp setup and Linux install lock, tarball preflight, and timeout. Restore the image-seeded npm cache only when its lockfile hash matches; retain network fallback. Builds keep their existing timeout. These helpers are not invoked by the portable profile.
+- Cardápio responsivo para celular e desktop.
+- Categorias, busca, destaques e produtos mais pedidos.
+- Personalizações de sabores e extras.
+- Carrinho persistente e cálculo de subtotal, entrega e total.
+- Retirada no balcão ou entrega por bairros e taxas.
+- Validação do pedido no servidor.
+- Acompanhamento do pedido por código.
+- Confirmação organizada pelo WhatsApp, com modelos completo, compacto e rápido.
+- Loja aberta, fechada ou automática conforme a agenda.
 
-`scripts/sites-env.mjs` preserves the caller's HOME, npm cache, proxy, XDG, and temporary-directory configuration while defaulting Wrangler and Miniflare state to the checkout. If npm reports an unwritable cache, select a writable path with `npm_config_cache` for that install. The `dev` and `start` scripts also keep Wrangler logs inside the checkout. Generated `.sites-runtime/` and `.wrangler/` directories are disposable and ignored by Git.
+### Para a equipe
 
-On portable, `npm run dev` uses `vinext dev` with HMR, starting at port 5173. Vinext records the running server in ignored `.vinext/` state, rejects an ordinary duplicate launch, and recovers stale state after a stopped process; exactly simultaneous starts can race. Pass `--port <port>` or `--hostname <host>` after `npm run dev --` when needed; keep portable previews on loopback.
+- Dashboard com pedidos, faturamento, ticket médio e períodos de análise.
+- Atualização dos pedidos e sinalização de novas pendências.
+- Detalhes completos do pedido e alteração de status.
+- Cadastro, edição, disponibilidade e destaque de produtos.
+- Editor de opções, sabores e extras.
+- Aparência da loja com prévia e cores personalizadas.
+- Horários semanais, virada de dia, abertura manual e fechamento manual.
+- Bairros, taxas de entrega e pedido mínimo.
+- Convites e acessos individuais por função.
+- Suspensão e reativação de membros da equipe.
+- Histórico de atividades administrativas.
+- Logout, recuperação segura do proprietário e MFA opcional.
 
-For browser QA on managed Linux, use `sites-preview start`. The project's dev script runs Vite and accepts the supervisor's `--host 0.0.0.0 --port 4173 --strictPort` arguments. The internal browser uses `http://terminal.local:4173/`; it is not a user-facing URL. The supervisor owns the preview lifecycle. The ignored local profile survives the supervisor's cleared process environment.
+## Visão rápida
 
-The portable profile simulates ChatGPT sign-in only for loopback development requests. Visit `/signin-with-chatgpt?return_to=/` to sign in as `local_seedy` (`seedy@sites.test`, display name `Seedy`) and `/signout-with-chatgpt?return_to=/` to sign out. The development cookie preserves that identity across server restarts. Mock auth is disabled in the managed-linux profile and is not included in production builds; hosted authentication remains dispatch-owned.
+<p align="center">
+  <img src="docs/showcase/slide-1.png" alt="Vitrine e cardápio Crazy Chicken" width="720">
+</p>
 
-The Worker uses `vinext/server/fetch-handler`, including Vinext's config-aware image handling. After building, `npm start` runs that Worker locally through Wrangler on `127.0.0.1`, sharing `.wrangler/state` with dev preview and local D1 migrations; it does not deploy the site or simulate sign-in. Use the URL printed by the server. Pass `npm start -- --port <port>` to select a different built-preview port.
+<details>
+  <summary><strong>Ver apresentação visual completa</strong></summary>
 
-Local previews use Miniflare's placeholder `Request.cf` metadata without a network lookup. Set `CLOUDFLARE_CF_FETCH_ENABLED=true` to opt into fetching preview metadata; this setting does not change hosted request metadata.
+  <p align="center">
+    <img src="docs/showcase/slide-2.png" alt="Fluxo de pedido em três passos" width="420">
+    <img src="docs/showcase/slide-3.png" alt="Catálogo e vitrine de produtos" width="420">
+  </p>
+  <p align="center">
+    <img src="docs/showcase/slide-4.png" alt="Configurações de operação e WhatsApp" width="420">
+    <img src="docs/showcase/slide-5.png" alt="Dashboard administrativo" width="420">
+  </p>
+  <p align="center">
+    <img src="docs/showcase/slide-6.png" alt="Produtos e aparência da loja" width="420">
+    <img src="docs/showcase/slide-7.png" alt="Equipe e acessos administrativos" width="420">
+  </p>
+</details>
 
-Local tool usage metrics are disabled by default. Set `WRANGLER_SEND_METRICS=true` to opt in.
+## Arquitetura
 
-## Included Shape
+```text
+Cliente
+  └─ Loja pública Next.js
+       ├─ catálogo, carrinho e checkout
+       ├─ disponibilidade da loja
+       └─ registro do pedido + WhatsApp
 
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindings—update these declarations if binding names change
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+Equipe
+  └─ Painel administrativo Next.js
+       ├─ dashboard e pedidos
+       ├─ produtos e aparência
+       ├─ configurações operacionais
+       └─ equipe, sessões e auditoria
 
-## Workspace Auth Headers
-
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
-
-The user ID is stable for the same user on the same Site and different across Sites. Use it as the durable user key; use email and name for display or contact purposes.
-
-SIWC-authenticated workspace sites may also receive `oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty `name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by `oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+Servidor
+  ├─ Route Handlers /api/*
+  ├─ autorização, CSRF e validações
+  ├─ Drizzle ORM + mysql2
+  ├─ MariaDB/MySQL da Hostinger
+  └─ Resend para convites e recuperação por e-mail
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+O phpMyAdmin é usado somente para manutenção: backup, diagnóstico e importação de migrações. A aplicação acessa o banco diretamente pela `DATABASE_URL`; o painel não depende de PHP para funcionar.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs optional or required ChatGPT sign-in:
+## Stack
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use the returned `userId` as the stable user key for user-owned records; do not use email as a durable identifier.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send anonymous visitors through Sign in with ChatGPT.
-- In a Server Component, start sign-in with `<a href={chatGPTSignInPath(returnTo)} target="_top">`. The auth helper module is server-only; do not import it into a Client Component.
-- Do not use `fetch`, XHR, a client-side router, or a framework link that can prefetch the sign-in route. SIWC must start as a top-level navigation.
-- Never request the AuthAPI authorization endpoint directly. The dispatch-owned `/signin-with-chatgpt` route must start the SIWC flow.
-- Use `chatGPTSignOutPath(returnTo)` for browser sign-out links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because they depend on per-request identity headers.
+- **Next.js 16** com App Router e React 19.
+- **TypeScript**.
+- **Drizzle ORM** e **mysql2**.
+- **MariaDB/MySQL** hospedado na Hostinger.
+- **Tailwind CSS 4** e componentes React reutilizáveis.
+- **Resend** para e-mails transacionais.
+- **WhatsApp via `wa.me`** para confirmação de pedidos.
+- **Node.js 22.13+**.
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the OAuth cookies, and identity header injection. Do not implement app routes for those reserved paths. Routes that do not import and call the helper remain anonymous-compatible.
+## Rodando localmente
 
-SIWC establishes identity only; it does not prove workspace membership. Use the Sites hosting platform's access policy controls for workspace-wide restrictions, or enforce explicit server-side membership or allowlist checks.
+### Pré-requisitos
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write actions tied to the current ChatGPT user. Leave public content anonymous.
+- Node.js `>= 22.13.0`.
+- npm.
+- Uma instância MariaDB/MySQL para os fluxos que dependem de banco.
 
-## Local D1 migrations
+### Instalação
 
-For a D1-backed local preview, generate SQL with `npm run db:generate`. Build once through the Sites skill's build entrypoint (or `npm run build` for standalone use) to generate `dist/server/wrangler.json`, rebuilding if bindings change. From the project root, apply each pending migration in order:
-
-```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_example.sql
+```bash
+git clone https://github.com/andrewklayverr/crazychicken-cardapio.git
+cd crazychicken-cardapio
+npm ci
 ```
 
-Replace the filename with the pending migration and `DB` with your D1 binding name if different. Use `.wrangler/state`, not `.wrangler/state/v3`; Wrangler adds the versioned directories. Do not replay migrations already applied locally. This updates only the preview database; publishing applies production migrations separately.
+Crie um arquivo `.env.local` a partir de `.env.example` e preencha somente valores locais ou de desenvolvimento:
 
-## Diagnostic Commands
+```bash
+cp .env.example .env.local
+```
 
-- `npm run install:ci`: perform the one locked dependency install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build the deployable Sites artifact
-- `npm run start`: preview the built Worker locally with D1/R2 support
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+No Windows PowerShell:
 
-When using the Sites plugin, follow its skill instructions for installation, builds, and publishing. These npm commands remain available for standalone use.
+```powershell
+Copy-Item .env.example .env.local
+```
 
-The portable build runs Vinext directly without a host `timeout` command. The managed-linux build uses `scripts/build-verified.sh` and its existing `SITES_BUILD_TIMEOUT` setting.
+Inicie o ambiente de desenvolvimento:
 
-## Learn More
+```bash
+npm run dev
+```
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Abra `http://localhost:3000`.
+
+## Configuração de ambiente
+
+As principais variáveis são:
+
+| Variável | Finalidade |
+| --- | --- |
+| `DATABASE_URL` | Conexão com MariaDB/MySQL. |
+| `DB_SSL` | Habilita SSL da conexão quando configurado. |
+| `DB_CONNECTION_LIMIT` | Limite do pool de conexões. |
+| `UPLOAD_DIR` | Diretório persistente para imagens enviadas pelo painel. |
+| `AUTH_SECRET` | Segredo das proteções de autenticação. |
+| `MFA_ENCRYPTION_KEY` | Chave de proteção dos dados de MFA. |
+| `APP_URL` | Origem oficial usada em CSRF, links e redirecionamentos. |
+| `RESEND_API_KEY` | Chave do Resend, somente no servidor. |
+| `EMAIL_FROM` | Remetente dos e-mails transacionais. |
+
+Variáveis de setup, recuperação e compatibilidade legada são temporárias. Gere-as somente quando necessário e remova-as depois de concluir o fluxo. Nunca publique `.env`, `hostinger.env`, senhas, hashes, backups ou chaves no GitHub.
+
+## Banco e migrações
+
+As migrações da aplicação ficam em [`db/migrations`](db/migrations):
+
+1. `001_hostinger.sql` — estrutura inicial para a instalação na Hostinger.
+2. `002_admin_accounts.sql` — contas, sessões, convites e auditoria administrativa.
+3. `003_order_customization.sql` — opções e personalizações de produtos.
+4. `004_admin_operations.sql` — funcionamento da loja, agenda e operações.
+5. `005_whatsapp_templates.sql` — modelo de mensagem usado nos pedidos.
+
+Antes de uma atualização importante:
+
+```bash
+npm run db:backup
+npm run db:migrate
+```
+
+Em produção, faça backup pelo fluxo configurado para a Hostinger e confirme a migração no banco antes de publicar o novo código.
+
+## Scripts úteis
+
+| Comando | Uso |
+| --- | --- |
+| `npm run dev` | Desenvolvimento local. |
+| `npm run build` | Build de produção com webpack. |
+| `npm start` | Inicia a aplicação na porta fornecida pela Hostinger. |
+| `npm run lint` | Verifica padrões e problemas de código. |
+| `npm run test:store` | Testa regras de funcionamento da loja. |
+| `npm run test:security` | Testa controles de segurança da aplicação. |
+| `npm run test:whatsapp` | Testa a formatação dos pedidos para o WhatsApp. |
+| `npm run db:generate` | Gera migrações Drizzle. |
+| `npm run db:migrate` | Aplica migrações no MariaDB/MySQL. |
+| `npm run db:backup` | Cria backup do banco configurado. |
+
+## Publicação na Hostinger
+
+Configure uma aplicação Node.js com:
+
+```text
+Build:  npm run build
+Start:  npm start
+Node:   22 ou superior
+```
+
+O diretório de uploads deve ser persistente e não pode depender da pasta temporária de um build. Para o domínio atual, configure:
+
+```env
+APP_URL=https://crazychicken247.com.br
+```
+
+O domínio usado no `APP_URL`, o remetente do Resend e os registros DNS precisam estar alinhados. Consulte [`HOSTINGER.md`](HOSTINGER.md) para o procedimento de migração, backup, domínio, e-mail e variáveis de produção.
+
+## Segurança
+
+Os controles relevantes ficam documentados em [`DESENVOLVIMENTO_SEGURO.md`](DESENVOLVIMENTO_SEGURO.md) e [`SECURITY.md`](SECURITY.md). Entre eles:
+
+- autenticação individual por sessão administrativa;
+- autorização no servidor por função e recurso;
+- proteção CSRF e validação de origem;
+- senhas com `scrypt` e tokens armazenados por hash;
+- limites para login, recuperação, convites e pedidos;
+- validação de tipo e assinatura em uploads;
+- consultas parametrizadas pelo ORM;
+- respostas públicas sem segredos de ambiente;
+- auditoria das ações administrativas.
+
+Uma auditoria de segurança não substitui a validação do ambiente produtivo. Antes de publicar alterações de autenticação ou infraestrutura, rode os testes, o lint, o build e valide os fluxos no staging ou no domínio de teste.
+
+## Estrutura principal
+
+```text
+app/                 páginas públicas, admin e APIs
+components/          interfaces compartilhadas e painel
+db/                  schema e migrações SQL
+lib/                  autenticação, catálogo, tema, horários e segurança
+public/               imagens públicas da loja
+scripts/              migração, backup, testes e inicialização
+tests/                testes automatizados
+docs/showcase/        imagens de apresentação do projeto
+```
+
+## Próximos passos
+
+- Relatórios por período e exportação CSV.
+- Produtos mais vendidos e horários de maior movimento.
+- Promoções, cupons e combos.
+- Controle de ingredientes e indisponibilidade automática.
+- Histórico de clientes com consentimento.
+- Fluxo de cozinha e impressão de pedidos.
+- Despesas, margem e fechamento de caixa.
+- Pix e pagamentos online.
+
+## Licença
+
+Projeto privado e proprietário. Consulte o responsável pelo repositório antes de reutilizar código, imagens, marca ou dados da operação.
