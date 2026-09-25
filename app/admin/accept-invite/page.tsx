@@ -3,6 +3,8 @@
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "../../../components/brand-mark";
+import { PasswordRequirements } from "../../../components/password-requirements";
+import { getPasswordChecks } from "../../../lib/password-rules";
 
 export default function AcceptInvitePage() {
   return <Suspense fallback={<main className="admin-login-page"><section className="admin-login-card"><BrandMark />Validando convite...</section></main>}><AcceptInviteForm /></Suspense>;
@@ -40,6 +42,11 @@ function AcceptInviteForm() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
+    const passwordChecks = getPasswordChecks(form.password);
+    if (!passwordChecks.minLength || !passwordChecks.hasNumber || !passwordChecks.hasSpecial) {
+      setError("Escolha uma senha que cumpra todas as regras abaixo.");
+      return;
+    }
     setLoading(true);
     const response = await fetch("/api/admin/invitations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, name: form.name, password: form.password, mfaSecret: secret, mfaCode: form.code }) });
     const data = await response.json() as { error?: string; recoveryCodes?: string[] };
@@ -55,5 +62,5 @@ function AcceptInviteForm() {
   if (checking) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Validando convite</h1><p>Aguarde um instante.</p></section></main>;
   if (!info) return <main className="admin-login-page"><section className="admin-login-card"><BrandMark /><span className="eyebrow">Convite indisponível</span><h1>Link inválido</h1><p role="alert">{error || "Este convite expirou ou já foi utilizado."}</p><button type="button" className="secondary-button" onClick={() => router.replace("/admin/login")}>Voltar ao login</button></section></main>;
 
-  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Ative seu acesso</h1><p>{info.email}<br />Função: {info.role === "owner" ? "proprietário" : info.role === "manager" ? "gerente" : "atendente"}</p><label className="form-label">Seu nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label className="form-label">Nova senha<input type="password" minLength={12} required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>{info.role === "owner" && <><p className="admin-help">No aplicativo autenticador, adicione a conta usando este código/chave:</p><code className="mfa-secret">{secret}</code><p className="admin-help">URI: {uri}</p><label className="form-label">Código de confirmação<input inputMode="numeric" required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label></>}{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Ativando..." : "Criar minha conta"}</button></form></main>;
+  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Convite Crazy Chicken</span><h1>Ative seu acesso</h1><p>{info.email}<br />Função: {info.role === "owner" ? "proprietário" : info.role === "manager" ? "gerente" : "atendente"}</p><label className="form-label">Seu nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label className="form-label">Nova senha<input type="password" minLength={8} maxLength={128} required autoComplete="new-password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label><PasswordRequirements password={form.password} />{info.role === "owner" && <><p className="admin-help">No aplicativo autenticador, adicione a conta usando este código/chave:</p><code className="mfa-secret">{secret}</code><p className="admin-help">URI: {uri}</p><label className="form-label">Código de confirmação<input inputMode="numeric" required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} /></label></>}{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Ativando..." : "Criar minha conta"}</button></form></main>;
 }

@@ -626,3 +626,12 @@ input,textarea,select,button { max-width:100%; box-sizing:border-box; }
   .dashboard-toolbar .filter-button,.orders-filters,.orders-filters .filter-button { width:100%; max-width:100%; }
   .orders-filters { justify-content:stretch; }
 }
+
+.password-requirements { display:grid; gap:6px; margin:-7px 0 18px; padding:0; list-style:none; color:#8b7d6b; font-size:12px; font-weight:700; }
+.password-requirements li { display:flex; align-items:center; gap:7px; }
+.password-requirements li span { width:17px; height:17px; display:grid; place-items:center; border:1px solid #cbbda6; border-radius:50%; color:#9b8d78; font-size:11px; }
+.password-requirements li.is-valid { color:#247c3b; }
+.password-requirements li.is-valid span { border-color:#54a968; background:#e3f5e6; color:#247c3b; }
+.password-requirements__error { margin:-11px 0 17px; color:#b53327; font-size:12px; line-height:1.4; }
+.audit-entry__message { min-width:0; overflow-wrap:anywhere; }
+.audit-entry__message strong { color:var(--ink); }

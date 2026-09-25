@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "../../../components/brand-mark";
+import { PasswordRequirements } from "../../../components/password-requirements";
+import { getPasswordChecks } from "../../../lib/password-rules";
 
 export default function AdminSetupPage() {
   const router = useRouter();
@@ -13,6 +15,8 @@ export default function AdminSetupPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
+    const passwordChecks = getPasswordChecks(form.password);
+    if (!passwordChecks.minLength || !passwordChecks.hasNumber || !passwordChecks.hasSpecial) { setError("Escolha uma senha que cumpra todas as regras abaixo."); return; }
     setLoading(true);
     const response = await fetch("/api/admin/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     const data = await response.json() as { error?: string };
@@ -24,5 +28,5 @@ export default function AdminSetupPage() {
     router.replace("/admin");
   }
 
-  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Primeiro acesso</span><h1>Configurar administrador</h1><p>Use o código único recebido na entrega do site.</p><label className="form-label">Código de configuração<input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} autoComplete="one-time-code" /></label><label className="form-label">E-mail do responsável<input type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="email" /></label><label className="form-label">Nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} autoComplete="name" /></label><label className="form-label">Nova senha<input type="password" required minLength={12} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete="new-password" /></label>{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Configurando..." : "Criar acesso"}</button><a href="/admin/login">Já tenho uma conta</a></form></main>;
+  return <main className="admin-login-page"><form className="admin-login-card" onSubmit={submit}><BrandMark /><span className="eyebrow">Primeiro acesso</span><h1>Configurar administrador</h1><p>Use o código único recebido na entrega do site.</p><label className="form-label">Código de configuração<input required value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} autoComplete="one-time-code" /></label><label className="form-label">E-mail do responsável<input type="email" required value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} autoComplete="email" /></label><label className="form-label">Nome<input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} autoComplete="name" /></label><label className="form-label">Nova senha<input type="password" required minLength={8} maxLength={128} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} autoComplete="new-password" /></label><PasswordRequirements password={form.password} />{error && <div className="form-error">{error}</div>}<button className="primary-button" disabled={loading}>{loading ? "Configurando..." : "Criar acesso"}</button><a href="/admin/login">Já tenho uma conta</a></form></main>;
 }

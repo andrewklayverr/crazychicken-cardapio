@@ -20,7 +20,7 @@ type AdminOrder = { id: number; code: string; status: string; fulfillmentType: s
 type OrderItem = { id: number; productName: string; quantity: number; unitPriceCents: number; optionsJson: string; itemNotes?: string | null };
 type Member = { id: number; email: string; name: string; role: string; status: string; mfaEnabledAt?: string | null; lastLoginAt?: string | null };
 type DeliveryZone = { id: number; name: string; feeCents: number; active: boolean; sortOrder: number };
-type AuditEntry = { id: number; actorEmail: string; action: string; entity: string; entityId?: string | null; createdAt: string };
+type AuditEntry = { id: number; actorEmail: string; action: string; entity: string; entityId?: string | null; metadataJson?: string | null; createdAt: string };
 type Appearance = {
   heroTitle: string;
   heroDescription: string;
@@ -295,8 +295,17 @@ function TeamSection({ currentUser, members, reload, notify }: { currentUser: Cu
 }
 
 function AuditSection({ entries }: { entries: AuditEntry[] }) {
-  const labels: Record<string, string> = { create: "criou", update: "atualizou", delete: "removeu", status_change: "alterou o status", invite: "convidou", resend_invite: "reenviou um convite", owner_password_recovered: "recuperou a senha" };
-  return <section className="admin-card page-card"><div className="admin-card__heading"><div><span className="eyebrow">Auditoria</span><h2>Últimas atividades</h2></div><History size={20} /></div><div className="audit-list">{entries.map((entry) => <article key={entry.id}><span><strong>{entry.actorEmail}</strong> {labels[entry.action] ?? entry.action} <b>{entry.entity}</b></span><time>{new Date(entry.createdAt).toLocaleString("pt-BR")}</time></article>)}{!entries.length && <div className="admin-empty">Nenhuma atividade registrada.</div>}</div></section>;
+  const actionLabels: Record<string, string> = { create: "adicionou", update: "atualizou", delete: "removeu", status_change: "alterou o andamento de", invite: "enviou um convite para", resend_invite: "reenviou o convite para", owner_password_recovered: "recuperou o acesso de", invite_accepted: "ativou o acesso de", password_reset: "alterou a senha de", upload: "enviou" };
+  const entityLabels: Record<string, string> = { store_settings: "as configurações da loja", order: "o pedido", product: "o produto", category: "a categoria", delivery_zone: "a área de entrega", admin_user: "um acesso da equipe", admin_users: "a conta administrativa", asset: "uma imagem" };
+  function describe(entry: AuditEntry) {
+    let metadata: { name?: string; status?: string } = {};
+    try { metadata = JSON.parse(entry.metadataJson ?? "{}"); } catch { /* histórico antigo sem detalhes legíveis */ }
+    if (entry.action === "status_change" && entry.entity === "order") return `alterou o andamento do pedido${entry.entityId ? ` #${entry.entityId}` : ""}${metadata.status ? ` para ${statusLabels[metadata.status] ?? "status atualizado"}` : ""}`;
+    const entity = entityLabels[entry.entity] ?? "uma informação da loja";
+    const detail = metadata.name ? ` “${metadata.name}”` : entry.entityId && ["product", "category", "delivery_zone"].includes(entry.entity) ? ` #${entry.entityId}` : "";
+    return `${actionLabels[entry.action] ?? "atualizou"} ${entity}${detail}`;
+  }
+  return <section className="admin-card page-card"><div className="admin-card__heading"><div><span className="eyebrow">Histórico da operação</span><h2>Atividades recentes</h2><p className="admin-help">Acompanhe as alterações feitas no painel e na loja.</p></div><History size={20} /></div><div className="audit-list">{entries.map((entry) => <article key={entry.id}><span className="audit-entry__message"><strong>{entry.actorEmail}</strong> {describe(entry)}.</span><time>{new Date(entry.createdAt).toLocaleString("pt-BR")}</time></article>)}{!entries.length && <div className="admin-empty">Nenhuma atividade registrada.</div>}</div></section>;
 }
 
 function SecuritySection({ currentUser, notify }: { currentUser: CurrentAdmin; notify: (message: string) => void }) {

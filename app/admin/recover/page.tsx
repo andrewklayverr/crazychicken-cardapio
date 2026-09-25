@@ -3,6 +3,8 @@
 import { FormEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { BrandMark } from "../../../components/brand-mark";
+import { PasswordRequirements } from "../../../components/password-requirements";
+import { getPasswordChecks } from "../../../lib/password-rules";
 
 export default function RecoverAdminPage() {
   const [form, setForm] = useState({ email: "", code: "", password: "", confirmPassword: "" });
@@ -15,6 +17,8 @@ export default function RecoverAdminPage() {
     event.preventDefault();
     if (submitting.current) return;
     setError("");
+    const passwordChecks = getPasswordChecks(form.password);
+    if (!passwordChecks.minLength || !passwordChecks.hasNumber || !passwordChecks.hasSpecial) { setError("Escolha uma senha que cumpra todas as regras abaixo."); return; }
     if (form.password !== form.confirmPassword) { setError("As senhas não coincidem."); return; }
     submitting.current = true;
     setLoading(true);
@@ -34,10 +38,11 @@ export default function RecoverAdminPage() {
       <p>Use o código temporário fornecido pelo responsável pela hospedagem e escolha sua nova senha.</p>
       <label className="form-label">E-mail<input type="email" required maxLength={190} autoComplete="username" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></label>
       <label className="form-label">Código temporário<input type="password" required maxLength={128} autoComplete="off" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} /></label>
-      <label className="form-label">Nova senha<input type={visible ? "text" : "password"} required minLength={12} maxLength={128} autoComplete="new-password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
-      <label className="form-label">Confirmar senha<input type={visible ? "text" : "password"} required minLength={12} maxLength={128} autoComplete="new-password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} /></label>
+      <label className="form-label">Nova senha<input type={visible ? "text" : "password"} required minLength={8} maxLength={128} autoComplete="new-password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></label>
+      <PasswordRequirements password={form.password} />
+      <label className="form-label">Confirmar senha<input type={visible ? "text" : "password"} required minLength={8} maxLength={128} autoComplete="new-password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} /></label>
       <button type="button" className="secondary-button" aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? "Ocultar senhas" : "Mostrar senhas"}</button>
-      <p>Use de 12 a 128 caracteres. Esta será a senha para entrar no painel.</p>
+      <p>Use de 8 a 128 caracteres, com pelo menos um número e um símbolo.</p>
       {error && <p role="alert" className="form-error">{error}</p>}
       <button type="submit" className="primary-button" disabled={loading}>{loading ? "Atualizando…" : "Salvar nova senha"}</button>
       <Link href="/admin/login">Voltar para o login</Link>

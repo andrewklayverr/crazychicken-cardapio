@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+export { validatePassword } from "./password-rules";
 const SCRYPT_N = 131072;
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
@@ -12,12 +13,6 @@ export type AdminStatus = "invited" | "active" | "suspended";
 
 export function normalizeEmail(value: string) {
   return value.trim().toLowerCase().slice(0, 190);
-}
-
-export function validatePassword(password: string) {
-  if (password.length < 12) return "A senha precisa ter pelo menos 12 caracteres.";
-  if (password.length > 128) return "A senha não pode ter mais de 128 caracteres.";
-  return null;
 }
 
 export async function hashPassword(password: string) {
