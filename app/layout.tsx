@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const siteUrl = "https://crazychiken.com.br";
+const siteUrl = process.env.APP_URL?.trim() || "https://crazychicken247.com.br";
 
 export const viewport: Viewport = {
   width: "device-width",

@@ -24,4 +24,4 @@ Não realize testes destrutivos, negação de serviço, engenharia social nem ac
 
 ## Escopo e versões
 
-O escopo mantido é a versão publicada a partir da branch principal deste repositório, incluindo a loja pública, o painel administrativo e as APIs servidas em `crazychiken.com.br`. Serviços de terceiros, contas dos provedores e ataques contra disponibilidade não fazem parte do escopo, mas falhas de integração que exponham dados desta aplicação podem ser reportadas.
+O escopo mantido é a versão publicada a partir da branch principal deste repositório, incluindo a loja pública, o painel administrativo e as APIs servidas em `crazychicken247.com.br`. Serviços de terceiros, contas dos provedores e ataques contra disponibilidade não fazem parte do escopo, mas falhas de integração que exponham dados desta aplicação podem ser reportadas.

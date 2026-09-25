@@ -5,13 +5,13 @@ import { takeMemoryRateLimit } from "../lib/memory-rate-limit.ts";
 
 const previousAppUrl = process.env.APP_URL;
 const previousNodeEnv = process.env.NODE_ENV;
-process.env.APP_URL = "https://crazychiken.com.br";
+process.env.APP_URL = "https://crazychicken247.com.br";
 process.env.NODE_ENV = "production";
 
-assert.equal(isTrustedRequestOrigin(new Request("https://internal-host/api/admin/settings", { headers: { origin: "https://crazychiken.com.br" } })), true);
-assert.equal(isTrustedRequestOrigin(new Request("https://crazychiken.com.br/api/admin/settings", { headers: { origin: "https://evil.example", "x-forwarded-host": "evil.example" } })), false);
-assert.equal(isTrustedRequestOrigin(new Request("https://crazychiken.com.br/api/admin/settings")), false);
-assert.equal(isTrustedRequestOrigin(new Request("https://crazychiken.com.br/api/admin/settings", { headers: { origin: "https://crazychiken.com.br", "sec-fetch-site": "cross-site" } })), false);
+assert.equal(isTrustedRequestOrigin(new Request("https://internal-host/api/admin/settings", { headers: { origin: "https://crazychicken247.com.br" } })), true);
+assert.equal(isTrustedRequestOrigin(new Request("https://crazychicken247.com.br/api/admin/settings", { headers: { origin: "https://evil.example", "x-forwarded-host": "evil.example" } })), false);
+assert.equal(isTrustedRequestOrigin(new Request("https://crazychicken247.com.br/api/admin/settings")), false);
+assert.equal(isTrustedRequestOrigin(new Request("https://crazychicken247.com.br/api/admin/settings", { headers: { origin: "https://crazychicken247.com.br", "sec-fetch-site": "cross-site" } })), false);
 assert.equal(safeStringEqual("token", "token"), true);
 assert.equal(safeStringEqual("token", "other"), false);
 

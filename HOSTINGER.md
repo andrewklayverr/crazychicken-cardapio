@@ -20,9 +20,9 @@ Após publicar esta versão, execute **localmente** na pasta do projeto:
 node scripts/generate-admin-recovery.mjs
 ```
 
-O comando imprime `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_CODE` e `ADMIN_RECOVERY_EXPIRES_AT`, com código aleatório de 32 bytes e validade de 23 horas. Copie os valores para as variáveis da aplicação na Hostinger (não para o GitHub). Confirme `APP_URL=https://crazychiken.com.br`, salve e faça redeploy. O arquivo local `hostinger.env` não configura automaticamente a hospedagem.
+O comando imprime `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_CODE` e `ADMIN_RECOVERY_EXPIRES_AT`, com código aleatório de 32 bytes e validade de 23 horas. Copie os valores para as variáveis da aplicação na Hostinger (não para o GitHub). Confirme `APP_URL=https://crazychicken247.com.br`, salve e faça redeploy. O arquivo local `hostinger.env` não configura automaticamente a hospedagem.
 
-Abra `https://crazychiken.com.br/admin/recover`, informe o código e `rodrigostuarth@hotmail.com`, escolha uma senha de 12 a 128 caracteres e confirme-a. Após a confirmação de sucesso, siga para o login e use essa senha. Não coloque a senha nem seu hash nas variáveis de ambiente ou no banco manualmente.
+Abra `https://crazychicken247.com.br/admin/recover`, informe o código e `rodrigostuarth@hotmail.com`, escolha uma senha de 12 a 128 caracteres e confirme-a. Após a confirmação de sucesso, siga para o login e use essa senha. Não coloque a senha nem seu hash nas variáveis de ambiente ou no banco manualmente.
 
 O formulário atende somente a conta proprietária existente e ativa do e-mail configurado; não cria outra conta, não altera permissões e preserva MFA. O código é de uso único, mesmo que as variáveis permaneçam configuradas. Valores expirados ou com mais de 24 horas restantes são recusados. Para obter novo prazo, gere **outro código**. Cinco tentativas por conta ou IP em 15 minutos bloqueiam temporariamente a recuperação, sem bloquear o login normal.
 
@@ -73,13 +73,22 @@ No endereço temporário, valide vitrine, bebidas e caipirinhas, carrinho após 
 
 ## Domínio
 
-O domínio oficial deste projeto é `crazychiken.com.br`. A marca exibida continua sendo "Crazy Chicken"; apenas o endereço usa a grafia sem o segundo `c` de "chicken".
+O domínio oficial deste projeto é `crazychicken247.com.br`. A marca exibida continua sendo "Crazy Chicken".
+
+Na migração do domínio anterior:
+
+1. associe `crazychicken247.com.br` à aplicação Node.js e aguarde o SSL ficar ativo;
+2. altere `APP_URL` na Hostinger e faça um novo deploy, pois login, CSRF, convites e redefinição de senha validam essa origem;
+3. verifique `crazychicken247.com.br` no Resend e só então altere `EMAIL_FROM` para o novo remetente;
+4. gere novos convites e links de redefinição, porque links enviados anteriormente continuam apontando para o domínio antigo;
+5. entre novamente no painel no novo domínio, pois cookies e sessões do navegador não são transferidos entre domínios;
+6. se o domínio anterior continuar sob controle, configure nele um redirecionamento permanente para o novo endereço depois da validação.
 
 Configure na Hostinger:
 
-- `APP_URL=https://crazychiken.com.br`
-- `EMAIL_FROM=Crazy Chicken <noreply@crazychiken.com.br>` somente depois de verificar esse domínio no Resend
+- `APP_URL=https://crazychicken247.com.br`
+- `EMAIL_FROM=Crazy Chicken <noreply@crazychicken247.com.br>` somente depois de verificar esse domínio no Resend
 
-O site, o certificado SSL e a aplicação Node.js devem estar associados a `crazychiken.com.br`. Depois do deploy, teste `https://crazychiken.com.br`, `https://crazychiken.com.br/admin` e `https://crazychiken.com.br/admin/setup`. Evite qualquer variação com uma letra `c` adicional no endereço.
+O site, o certificado SSL e a aplicação Node.js devem estar associados a `crazychicken247.com.br`. Depois do deploy, teste `https://crazychicken247.com.br`, `https://crazychicken247.com.br/admin` e `https://crazychicken247.com.br/admin/setup`.
 
 Após a validação, confirme os registros exibidos no hPanel, ative HTTPS e teste com e sem `www`. A propagação pode levar algumas horas. A criação da aplicação, do banco e dos registros DNS depende do acesso à conta Hostinger e do domínio exato.
