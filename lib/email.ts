@@ -2,11 +2,19 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+type EmailTemplate = {
+  id: string;
+  variables: Record<string, string>;
+};
+
+async function sendEmail(to: string, subject: string, html: string, template?: EmailTemplate) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!apiKey || !from) throw new Error("Configure RESEND_API_KEY e EMAIL_FROM na Hostinger.");
-  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [to], subject, html }) });
+  const body = template
+    ? { from, to: [to], template: { id: template.id, variables: template.variables } }
+    : { from, to: [to], subject, html };
+  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!response.ok) throw new Error("Não foi possível enviar o e-mail de acesso.");
 }
 
@@ -20,8 +28,19 @@ function appUrl() {
 }
 
 export async function sendAdminInvite(input: { email: string; role: string; token: string; name?: string }) {
+  const templateId = process.env.RESEND_INVITE_TEMPLATE_ID?.trim();
+  const roleLabels: Record<string, string> = { owner: "Administrador", manager: "Gerente", attendant: "Atendente" };
+  const role = roleLabels[input.role] ?? input.role;
+  const name = input.name?.trim() || "equipe";
+  if (templateId) {
+    await sendEmail(input.email, "Seu acesso ao painel Crazy Chicken", "", {
+      id: templateId,
+      variables: { name, role, inviteToken: input.token, expiresIn: "24 horas" },
+    });
+    return;
+  }
   const url = `${appUrl()}/admin/accept-invite?token=${encodeURIComponent(input.token)}`;
-  await sendEmail(input.email, "Seu acesso ao painel Crazy Chicken", `<p>Você recebeu acesso ao painel administrativo da Crazy Chicken.</p><p>Função: <strong>${escapeHtml(input.role)}</strong></p><p><a href="${url}">Criar minha conta</a></p><p>Este link expira em 24 horas e só pode ser usado uma vez.</p>`);
+  await sendEmail(input.email, "Seu acesso ao painel Crazy Chicken", `<p>Você recebeu acesso ao painel administrativo da Crazy Chicken.</p><p>Função: <strong>${escapeHtml(role)}</strong></p><p><a href="${url}">Criar minha conta</a></p><p>Este link expira em 24 horas e só pode ser usado uma vez.</p>`);
 }
 
 export async function sendPasswordReset(input: { email: string; token: string }) {

@@ -109,7 +109,8 @@ h1,h2,h3,p { margin-top:0; }
 .order-callout__detail svg:last-child { margin-left:auto; }
 .order-callout__detail strong { color:var(--yellow); }
 .store-footer { max-width:1240px; margin:auto; padding:25px 32px 38px; border-top:1px solid var(--line); display:flex; align-items:center; gap:17px; color:#9b8d78; font-size:12px; }
-.store-footer .footer-social { margin-left:auto; color:var(--red); font-weight:800; }
+.store-footer .footer-social { margin-left:auto; display:inline-flex; align-items:center; gap:6px; color:var(--red); font-weight:800; text-decoration:none; }
+.store-footer .footer-social:hover { text-decoration:underline; }
 .floating-cart { position:fixed; bottom:23px; right:23px; z-index:30; border:0; border-radius:40px; display:flex; align-items:center; gap:10px; padding:13px 15px 13px 17px; background:var(--red); color:#fff; font-size:13px; font-weight:900; box-shadow:0 10px 28px #a3191c55; }
 .floating-cart b { background:var(--yellow); }
 .drawer-backdrop,.modal-backdrop { position:fixed; inset:0; z-index:50; background:#16100ccc; display:flex; justify-content:flex-end; }

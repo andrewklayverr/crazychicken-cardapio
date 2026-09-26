@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (existing) await db.update(adminUsers).set({ name, role, status: "invited" }).where(eq(adminUsers.id, userId));
     const token = randomToken();
     await db.insert(adminTokens).values({ userId, type: "invite", tokenHash: hashToken(token), expiresAt: sql`DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 24 HOUR)` });
-    try { await sendAdminInvite({ email, role, token }); } catch (error) { await db.delete(adminTokens).where(eq(adminTokens.tokenHash, hashToken(token))); if (!existing) await db.delete(adminUsers).where(eq(adminUsers.id, userId)); throw error; }
+    try { await sendAdminInvite({ email, role, token, name }); } catch (error) { await db.delete(adminTokens).where(eq(adminTokens.tokenHash, hashToken(token))); if (!existing) await db.delete(adminUsers).where(eq(adminUsers.id, userId)); throw error; }
     await recordAudit({ user: actor, action: existing ? "resend_invite" : "invite", entity: "admin_user", entityId: userId, metadata: { email, role } });
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) { return adminErrorResponse(error); }

@@ -160,6 +160,7 @@ As principais variáveis são:
 | `APP_URL` | Origem oficial usada em CSRF, links e redirecionamentos. |
 | `RESEND_API_KEY` | Chave do Resend, somente no servidor. |
 | `EMAIL_FROM` | Remetente dos e-mails transacionais. |
+| `RESEND_INVITE_TEMPLATE_ID` | ID do template publicado no Resend para convites da equipe. |
 
 Variáveis de setup, recuperação e compatibilidade legada são temporárias. Gere-as somente quando necessário e remova-as depois de concluir o fluxo. Nunca publique `.env`, `hostinger.env`, senhas, hashes, backups ou chaves no GitHub.
 
