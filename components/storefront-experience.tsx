@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { ArrowRight, Check, ChevronRight, Clock3, Flame, Instagram, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Clock3, Flame, MapPin, Menu, Minus, Plus, Search, ShoppingBag, Trash2, X } from "lucide-react";
 import { BrandMark } from "./brand-mark";
 import { fallbackProducts, fallbackSettings, type CatalogProduct } from "../lib/catalog";
 import { getStoreAvailability, normalizeOrderingMode, type OrderingMode, type WeeklySchedule } from "../lib/store-hours";
@@ -35,6 +35,10 @@ type InitialStorefrontData = { products: CatalogProduct[]; settings: Omit<Partia
 const categoryNames: Category[] = ["Todos", "Frangos", "Acompanhamentos", "Molhos", "Novidades", "Bebidas"];
 const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const assetUrl = (key: string | null | undefined) => !key ? "/hero-food.jpeg" : key.startsWith("/") || key.includes(".") && !key.includes("/") ? `/${key.replace(/^\//, "")}` : `/api/media?key=${encodeURIComponent(key)}`;
+
+function Instagram({ size = 16 }: { size?: number; "aria-hidden"?: boolean }) {
+  return <img src="/instagram.svg" alt="" width={size} height={size} aria-hidden="true" />;
+}
 
 function ProductCard({ product, onAdd, disabled }: { product: Product; onAdd: (product: Product) => void; disabled: boolean }) {
   return <article className="product-card"><div className="product-card__image-wrap"><img src={product.image} alt={product.name} className="product-card__image" width="640" height="480" />{product.badge && <span className="product-card__badge">{product.badge}</span>}<button type="button" className="product-card__quick-add" disabled={disabled} onClick={() => onAdd(product)} aria-label={`Adicionar ${product.name}`}><Plus size={18} strokeWidth={3} /></button></div><div className="product-card__body"><div className="product-card__meta"><span>{product.category}</span><span className="product-card__dot" /><span>feito na hora</span></div><h3>{product.name}</h3><p>{product.description}</p><div className="product-card__footer"><strong>{money(product.priceCents)}</strong><button type="button" className="product-card__add" disabled={disabled} onClick={() => onAdd(product)}>{disabled ? "Loja fechada" : "Adicionar"} {!disabled && <ArrowRight size={15} />}</button></div></div></article>;
