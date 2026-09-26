@@ -36,7 +36,7 @@ const categoryNames: Category[] = ["Todos", "Frangos", "Acompanhamentos", "Molho
 const money = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const assetUrl = (key: string | null | undefined) => !key ? "/hero-food.jpeg" : key.startsWith("/") || key.includes(".") && !key.includes("/") ? `/${key.replace(/^\//, "")}` : `/api/media?key=${encodeURIComponent(key)}`;
 
-function Instagram({ size = 16 }: { size?: number; "aria-hidden"?: boolean }) {
+function Instagram({ size = 16 }: { size?: number; "aria-hidden"?: boolean | string }) {
   return <img src="/instagram.svg" alt="" width={size} height={size} aria-hidden="true" />;
 }
 
