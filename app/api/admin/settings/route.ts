@@ -10,12 +10,22 @@ import { isWhatsAppTemplate, normalizeWhatsAppTemplate } from "../../../../lib/w
 
 const hex = /^#[0-9a-f]{6}$/i;
 
+function sanitizeHeroImageKey(value: unknown, fallback: string | null) {
+  if (value === undefined) return fallback;
+  const key = String(value ?? "").trim().slice(0, 255);
+  if (!key) return null;
+  if (key.startsWith("/") && !key.startsWith("//") && !key.includes("..")) return key;
+  if (/^uploads\/[a-z0-9._/-]+$/i.test(key) && !key.includes("..")) return key;
+  return fallback;
+}
+
 function sanitizeAppearance(value: unknown, existingValue?: string | null) {
   if (!value || typeof value !== "object") return undefined;
   const source = value as Record<string, unknown>;
   const current = parseAppearance(existingValue);
   return {
     ...current,
+    heroImageKey: sanitizeHeroImageKey(source.heroImageKey, current.heroImageKey ?? "/menu-cover.jpeg"),
     heroTitle: String(source.heroTitle ?? current.heroTitle).trim().slice(0, 100),
     heroDescription: String(source.heroDescription ?? current.heroDescription).trim().slice(0, 240),
     accent: hex.test(String(source.accent ?? "")) ? String(source.accent).toLowerCase() : current.accent,

@@ -50,6 +50,7 @@ export const fallbackSettings = {
   defaultDeliveryFeeCents: 0,
   theme: "cartaz-amarelo",
   appearance: {
+    heroImageKey: "/menu-cover.jpeg",
     heroTitle: "Hoje é dia de frango!",
     heroDescription: "Seu balde favorito, crocante e quentinho, está a um clique.",
     accent: "#ffc21b",
