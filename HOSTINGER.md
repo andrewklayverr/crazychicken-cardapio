@@ -65,7 +65,7 @@ Com o banco configurado, execute uma vez `npm run db:migrate` ou importe as migr
 
 ## Uploads
 
-O painel salva logo, banners e imagens em `UPLOAD_DIR`. Em produção, use uma pasta persistente da conta Hostinger, fora de uma pasta temporária de build. O upload exige sessão administrativa e o endpoint de mídia só serve chaves do diretório `uploads/`.
+O painel salva logo, banners e imagens em `UPLOAD_DIR`. Em produção, use uma pasta persistente da conta Hostinger, fora de uma pasta temporária de build. Para este site, configure `UPLOAD_DIR=/home/USUARIO_HOSTINGER/domains/crazychicken247.com.br/uploads`, substituindo o usuário pelo identificador exibido no hPanel. Nunca use `./public/uploads` em produção, porque a Hostinger substitui a pasta da implantação e esses arquivos desaparecem no próximo deploy. O upload exige sessão administrativa e o endpoint de mídia só serve chaves do diretório `uploads/`.
 
 ## Validação antes do DNS
 

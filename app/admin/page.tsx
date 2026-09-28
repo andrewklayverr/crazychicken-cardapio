@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AdminPanel, type AdminSection, type Product } from "../../components/admin-panel";
 import { requireAdmin } from "../../lib/admin";
 import { fallbackProducts } from "../../lib/catalog";
+import { assetUrl } from "../../lib/store";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     description: product.description,
     price: product.priceCents / 100,
     category: product.category,
-    image: product.imageKey ? `/${product.imageKey}` : "/hero-food.jpeg",
+    image: assetUrl(product.imageKey),
     imageKey: product.imageKey,
     badge: product.badge ?? undefined,
     featured: product.featured,

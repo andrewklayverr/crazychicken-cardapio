@@ -28,5 +28,5 @@ export function BrandMark({ compact = false, logoKey }: BrandMarkProps) {
     return () => { active = false; };
   }, [logoKey]);
 
-  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}><img className="brand-mark__image" src={resolveLogo(logoKey === undefined ? remoteLogoKey : logoKey)} alt="Crazy Chicken" /></div>;
+  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}><img className="brand-mark__image" src={resolveLogo(logoKey === undefined ? remoteLogoKey : logoKey)} alt="Crazy Chicken" onError={(event) => { if (!event.currentTarget.src.endsWith("/logo-frango.png")) event.currentTarget.src = "/logo-frango.png"; }} /></div>;
 }

@@ -212,6 +212,7 @@ O diretório de uploads deve ser persistente e não pode depender da pasta tempo
 
 ```env
 APP_URL=https://crazychicken247.com.br
+UPLOAD_DIR=/home/USUARIO_HOSTINGER/domains/crazychicken247.com.br/uploads
 ```
 
 O domínio usado no `APP_URL`, o remetente do Resend e os registros DNS precisam estar alinhados. Consulte [`HOSTINGER.md`](HOSTINGER.md) para o procedimento de migração, backup, domínio, e-mail e variáveis de produção.

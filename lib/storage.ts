@@ -1,7 +1,19 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const uploadRoot = path.resolve(process.env.UPLOAD_DIR ?? path.join(process.cwd(), "public", "uploads"));
+export function resolveUploadRoot(cwd = process.cwd(), configured = process.env.UPLOAD_DIR) {
+  const requested = configured?.trim();
+  if (requested && path.isAbsolute(requested)) return path.resolve(requested);
+
+  const normalizedCwd = cwd.replace(/\\/g, "/");
+  const hostingerBuild = normalizedCwd.match(/^(.*\/domains\/[^/]+)\/hbuilds(?:\/|$)/i);
+  if (hostingerBuild?.[1]) return path.resolve(hostingerBuild[1], "uploads");
+
+  return path.resolve(cwd, requested || path.join("public", "uploads"));
+}
+
+const uploadRoot = resolveUploadRoot();
+const legacyUploadRoot = path.resolve(process.cwd(), "public", "uploads");
 
 function safeKey(key: string) {
   const normalized = key.replace(/\\/g, "/").replace(/^\/+/, "");
@@ -26,5 +38,11 @@ export async function saveUpload(key: string, data: Uint8Array) {
 export async function readUpload(key: string) {
   const cleanKey = safeKey(key);
   const target = path.join(uploadRoot, cleanKey.replace(/^uploads[\\/]/, ""));
-  return readFile(target);
+  try {
+    return await readFile(target);
+  } catch (error) {
+    if (uploadRoot === legacyUploadRoot) throw error;
+    const legacyTarget = path.join(legacyUploadRoot, cleanKey.replace(/^uploads[\\/]/, ""));
+    return readFile(legacyTarget);
+  }
 }

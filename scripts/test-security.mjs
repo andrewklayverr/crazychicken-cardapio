@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import path from "node:path";
 import { detectSafeImageType, safeUploadBaseName } from "../lib/upload-security.ts";
 import { isTrustedRequestOrigin, safeStringEqual } from "../lib/request-security.ts";
 import { takeMemoryRateLimit } from "../lib/memory-rate-limit.ts";
+import { resolveUploadRoot } from "../lib/storage.ts";
 
 const previousAppUrl = process.env.APP_URL;
 const previousNodeEnv = process.env.NODE_ENV;
@@ -20,6 +22,7 @@ assert.deepEqual(detectSafeImageType(Uint8Array.from([0xff, 0xd8, 0xff, 0x00])),
 assert.deepEqual(detectSafeImageType(new TextEncoder().encode("RIFF0000WEBP")), { mime: "image/webp", extension: "webp" });
 assert.equal(detectSafeImageType(new TextEncoder().encode("<svg><script>alert(1)</script></svg>")), null);
 assert.equal(safeUploadBaseName("../../Foto perigosa.SVG"), "foto-perigosa");
+assert.equal(resolveUploadRoot("/home/u123/domains/exemplo.com/hbuilds/source/repository", "./public/uploads"), path.resolve("/home/u123/domains/exemplo.com", "uploads"));
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1000), true);
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1001), true);
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1002), false);
