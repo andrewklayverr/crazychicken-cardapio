@@ -650,6 +650,20 @@ input,textarea,select,button { max-width:100%; box-sizing:border-box; }
   .orders-filters { justify-content:stretch; }
 }
 
+/* Banner administrativo: empilhar os formatos no celular e preservar a largura dos controles. */
+@media (max-width:820px) {
+  .appearance-banner-grid { grid-template-columns:minmax(0,1fr); }
+  .appearance-banner-upload { width:100%; box-sizing:border-box; }
+  .appearance-banner-upload__heading { flex-wrap:wrap; }
+  .appearance-banner-upload__heading span { margin-left:auto; }
+  .appearance-banner-upload img { max-height:none; }
+  .appearance-banner-upload--mobile img { max-height:none; }
+  .appearance-banner-upload .secondary-button { width:100%; justify-content:center; }
+  .appearance-banner-upload__actions { width:100%; }
+  .appearance-banner-upload__actions .secondary-button { flex:1 1 100%; }
+  .appearance-banner-upload__actions button.secondary-button { flex:1 1 100%; }
+}
+
 .password-requirements { display:grid; gap:6px; margin:-7px 0 18px; padding:0; list-style:none; color:#8b7d6b; font-size:12px; font-weight:700; }
 .password-requirements li { display:flex; align-items:center; gap:7px; }
 .password-requirements li span { width:17px; height:17px; display:grid; place-items:center; border:1px solid #cbbda6; border-radius:50%; color:#9b8d78; font-size:11px; }
