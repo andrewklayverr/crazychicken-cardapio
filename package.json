@@ -9,7 +9,7 @@
     "install:ci": "node scripts/install-ci.mjs",
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "test:store": "node --experimental-strip-types scripts/test-store-rules.mjs",
     "test:security": "node --experimental-strip-types scripts/test-security.mjs",
