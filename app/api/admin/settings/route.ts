@@ -26,6 +26,7 @@ function sanitizeAppearance(value: unknown, existingValue?: string | null) {
   return {
     ...current,
     heroImageKey: sanitizeHeroImageKey(source.heroImageKey, current.heroImageKey ?? "/menu-cover.jpeg"),
+    heroMobileImageKey: sanitizeHeroImageKey(source.heroMobileImageKey, current.heroMobileImageKey ?? null),
     heroTitle: String(source.heroTitle ?? current.heroTitle).trim().slice(0, 100),
     heroDescription: String(source.heroDescription ?? current.heroDescription).trim().slice(0, 240),
     accent: hex.test(String(source.accent ?? "")) ? String(source.accent).toLowerCase() : current.accent,

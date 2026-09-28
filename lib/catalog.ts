@@ -51,6 +51,7 @@ export const fallbackSettings = {
   theme: "cartaz-amarelo",
   appearance: {
     heroImageKey: "/menu-cover.jpeg",
+    heroMobileImageKey: null as string | null,
     heroTitle: "Hoje é dia de frango!",
     heroDescription: "Seu balde favorito, crocante e quentinho, está a um clique.",
     accent: "#ffc21b",
