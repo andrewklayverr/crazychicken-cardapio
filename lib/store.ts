@@ -19,7 +19,7 @@ function normalizedSettings(setting: StoredSettings) {
     ...fallbackSettings,
     ...setting,
     whatsappNumber: setting.whatsappNumber ?? "",
-    logoKey: setting.logoKey || fallbackSettings.logoKey,
+    logoKey: setting.logoKey === "/logo-frango.png" ? fallbackSettings.logoKey : setting.logoKey || fallbackSettings.logoKey,
     orderingMode: setting.orderingMode ?? "open",
     weeklySchedule,
     appearance: parseAppearance(setting.appearanceJson),

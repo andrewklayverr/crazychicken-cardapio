@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const data = await readUpload(key);
     return new Response(data, { headers: {
       "Content-Type": contentType,
+      "Content-Length": String(data.byteLength),
       "Cache-Control": "public, max-age=31536000, immutable",
       "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
       "X-Content-Type-Options": "nosniff",

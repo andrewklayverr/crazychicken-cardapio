@@ -37,7 +37,7 @@ export const fallbackProducts: CatalogProduct[] = [
 
 export const fallbackSettings = {
   brandName: "Crazy Chicken",
-  logoKey: "/logo-frango.png",
+  logoKey: "/logo-frango.webp",
   whatsappNumber: "",
   whatsappTemplate: "complete" as const,
   address: "Rua 7 de Setembro, 247 · Suzano",

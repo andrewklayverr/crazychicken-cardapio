@@ -54,16 +54,16 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/logo-frango.png?v=20260923",
-        type: "image/png",
+        url: "/logo-frango.webp?v=20260928",
+        type: "image/webp",
         sizes: "1254x1254",
       },
     ],
-    shortcut: "/logo-frango.png?v=20260923",
+    shortcut: "/logo-frango.webp?v=20260928",
     apple: [
       {
-        url: "/logo-frango.png?v=20260923",
-        type: "image/png",
+        url: "/logo-frango.webp?v=20260928",
+        type: "image/webp",
         sizes: "1254x1254",
       },
     ],
