@@ -19,6 +19,15 @@ function sanitizeHeroImageKey(value: unknown, fallback: string | null) {
   return fallback;
 }
 
+function sanitizeImageKeyList(value: unknown, fallback: string[]) {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value)) return fallback;
+  const keys = value
+    .map((item) => sanitizeHeroImageKey(item, null))
+    .filter((item): item is string => Boolean(item));
+  return [...new Set(keys)].slice(0, 5);
+}
+
 function sanitizeAppearance(value: unknown, existingValue?: string | null) {
   if (!value || typeof value !== "object") return undefined;
   const source = value as Record<string, unknown>;
@@ -28,6 +37,7 @@ function sanitizeAppearance(value: unknown, existingValue?: string | null) {
     heroImageKey: sanitizeHeroImageKey(source.heroImageKey, current.heroImageKey ?? "/menu-cover.jpeg"),
     heroMobileImageKey: sanitizeHeroImageKey(source.heroMobileImageKey, current.heroMobileImageKey ?? null),
     drinkBannerImageKey: sanitizeHeroImageKey(source.drinkBannerImageKey, current.drinkBannerImageKey ?? "/drinks-menu.jpeg"),
+    drinkBannerImageKeys: sanitizeImageKeyList(source.drinkBannerImageKeys, current.drinkBannerImageKeys ?? []),
     heroTitle: String(source.heroTitle ?? current.heroTitle).trim().slice(0, 100),
     heroDescription: String(source.heroDescription ?? current.heroDescription).trim().slice(0, 240),
     accent: hex.test(String(source.accent ?? "")) ? String(source.accent).toLowerCase() : current.accent,
