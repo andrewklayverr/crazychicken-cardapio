@@ -1,7 +1,7 @@
 import { adminErrorResponse, recordAudit, requireAdmin } from "../../../../lib/admin";
 import { validateAdminMutation } from "../../../../lib/auth";
 import { optimizeUploadedImage } from "../../../../lib/image-optimization";
-import { saveUpload } from "../../../../lib/storage";
+import { saveUpload, uploadExists } from "../../../../lib/storage";
 import { detectSafeImageType, safeUploadBaseName } from "../../../../lib/upload-security";
 
 export async function POST(request: Request) {
@@ -23,7 +23,8 @@ export async function POST(request: Request) {
     const outputType = { mime: "image/webp" as const, extension: "webp" as const };
     const key = `uploads/${crypto.randomUUID()}-${safeUploadBaseName(file.name)}.${outputType.extension}`;
     await saveUpload(key, optimizedBytes);
+    if (!(await uploadExists(key))) throw new Error("A imagem foi processada, mas não pôde ser confirmada no armazenamento.");
     await recordAudit({ user, action: "upload", entity: "asset", entityId: key, metadata: { contentType: outputType.mime, originalContentType: imageType.mime, size: file.size, storedSize: optimizedBytes.byteLength } });
-    return Response.json({ key, url: `/api/media?key=${encodeURIComponent(key)}` }, { status: 201 });
+    return Response.json({ key, url: `/api/media?key=${encodeURIComponent(key)}`, verified: true }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) { return adminErrorResponse(error); }
 }

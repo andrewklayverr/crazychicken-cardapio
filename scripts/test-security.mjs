@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { detectSafeImageType, safeUploadBaseName } from "../lib/upload-security.ts";
 import { isTrustedRequestOrigin, safeStringEqual } from "../lib/request-security.ts";
 import { takeMemoryRateLimit } from "../lib/memory-rate-limit.ts";
-import { resolveUploadRoot } from "../lib/storage.ts";
+import { readUpload, resolveUploadRoot, saveUpload, uploadExists } from "../lib/storage.ts";
 
 const previousAppUrl = process.env.APP_URL;
 const previousNodeEnv = process.env.NODE_ENV;
@@ -23,6 +25,22 @@ assert.deepEqual(detectSafeImageType(new TextEncoder().encode("RIFF0000WEBP")), 
 assert.equal(detectSafeImageType(new TextEncoder().encode("<svg><script>alert(1)</script></svg>")), null);
 assert.equal(safeUploadBaseName("../../Foto perigosa.SVG"), "foto-perigosa");
 assert.equal(resolveUploadRoot("/home/u123/domains/exemplo.com/hbuilds/source/repository", "./public/uploads"), path.resolve("/home/u123/domains/exemplo.com", "uploads"));
+assert.equal(resolveUploadRoot("/app/current", "/srv/uploads"), path.resolve("/srv/uploads"));
+
+const temporaryUploadRoot = await mkdtemp(path.join(os.tmpdir(), "crazy-chicken-uploads-"));
+try {
+  const key = "uploads/teste-persistente.webp";
+  const content = new TextEncoder().encode("imagem-validada");
+  assert.equal(await saveUpload(key, content, temporaryUploadRoot), key);
+  assert.deepEqual([...(await readUpload(key, temporaryUploadRoot, temporaryUploadRoot))], [...content]);
+  assert.equal(await uploadExists(key, temporaryUploadRoot), true);
+  assert.equal(await uploadExists("uploads/inexistente.webp", temporaryUploadRoot), false);
+  await assert.rejects(() => saveUpload("uploads/../fora.webp", content, temporaryUploadRoot), /Arquivo inválido/);
+  await assert.rejects(() => saveUpload(key, content, path.join(temporaryUploadRoot, "public", "uploads")), /pasta persistente/);
+} finally {
+  await rm(temporaryUploadRoot, { recursive: true, force: true });
+}
+
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1000), true);
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1001), true);
 assert.equal(takeMemoryRateLimit("test", "address", 2, 60_000, 1002), false);

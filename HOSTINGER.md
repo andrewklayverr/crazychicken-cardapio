@@ -65,7 +65,11 @@ Com o banco configurado, execute uma vez `npm run db:migrate` ou importe as migr
 
 ## Uploads
 
-O painel salva logo, banners e imagens em `UPLOAD_DIR`. Em produção, use uma pasta persistente da conta Hostinger, fora de uma pasta temporária de build. Para este site, configure `UPLOAD_DIR=/home/USUARIO_HOSTINGER/domains/crazychicken247.com.br/uploads`, substituindo o usuário pelo identificador exibido no hPanel. Nunca use `./public/uploads` em produção, porque a Hostinger substitui a pasta da implantação e esses arquivos desaparecem no próximo deploy. O upload exige sessão administrativa e o endpoint de mídia só serve chaves do diretório `uploads/`.
+O painel salva logo, banners e imagens em `UPLOAD_DIR`. Em produção, use uma pasta persistente da conta Hostinger, fora de uma pasta temporária de build. Para este site, configure no hPanel `UPLOAD_DIR=/home/u622368456/domains/crazychicken247.com.br/uploads`. Essa pasta fica no servidor e recebe normalmente arquivos enviados pelo cliente em qualquer dispositivo ou cidade. Nunca use `./public/uploads` em produção, porque a Hostinger substitui a pasta da implantação e esses arquivos desaparecem no próximo deploy.
+
+O servidor cria o diretório quando necessário, grava primeiro em um arquivo temporário, relê os bytes e só publica o nome definitivo depois da confirmação. O banco guarda apenas a chave `uploads/uuid-foto.webp`; caminhos absolutos não são expostos ao navegador. Ao trocar uma foto de produto, o painel confirma o arquivo e a chave devolvida pelo banco antes de exibir sucesso. Inclua a pasta `domains/crazychicken247.com.br/uploads` nos backups da hospedagem; deploys do GitHub não devem apagar seu conteúdo.
+
+O upload exige sessão administrativa e token CSRF. Novos envios aceitam somente PNG, JPG e WEBP válidos, são convertidos para WEBP e o endpoint de mídia só serve chaves seguras do diretório `uploads/`.
 
 ## Validação antes do DNS
 

@@ -215,6 +215,8 @@ APP_URL=https://crazychicken247.com.br
 UPLOAD_DIR=/home/USUARIO_HOSTINGER/domains/crazychicken247.com.br/uploads
 ```
 
+O arquivo é enviado pelo navegador ao servidor, validado e confirmado antes de sua chave ser gravada no produto. A pasta de uploads precisa fazer parte do backup da hospedagem e não deve ser removida durante deploys.
+
 O domínio usado no `APP_URL`, o remetente do Resend e os registros DNS precisam estar alinhados. Consulte [`HOSTINGER.md`](HOSTINGER.md) para o procedimento de migração, backup, domínio, e-mail e variáveis de produção.
 
 ## Segurança
