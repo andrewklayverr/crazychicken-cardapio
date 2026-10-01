@@ -187,14 +187,17 @@ function DrinkSpotlight({ imageUrls, onViewDrinks }: { imageUrls: string[]; onVi
   const [activeSlide, setActiveSlide] = useState(0);
   const activeImage = images[activeSlide] ?? images[0];
 
+  const showPrevious = () => setActiveSlide((current) => (current - 1 + images.length) % images.length);
+  const showNext = () => setActiveSlide((current) => (current + 1) % images.length);
+
   useEffect(() => setActiveSlide(0), [signature]);
   useEffect(() => {
-    if (images.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % images.length), 5000);
+    if (images.length < 2) return;
+    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % images.length), 4500);
     return () => window.clearInterval(timer);
   }, [images.length, signature]);
 
-  return <section className="drink-spotlight" id="bebidas"><div className="drink-spotlight__backdrop" style={{ backgroundImage: `url("${activeImage}")` }} aria-hidden /><div className="drink-spotlight__image"><img key={activeImage} src={activeImage} alt={`Caipirinhas gourmet Crazy Chicken — imagem ${activeSlide + 1} de ${images.length}`} loading="lazy" decoding="async" onError={(event) => recoverImage(event, "/drinks-menu.jpeg")} />{images.length > 1 && <div className="drink-carousel" aria-label="Escolher imagem do banner">{images.map((image, index) => <button type="button" key={`${image}-${index}`} className={index === activeSlide ? "active" : ""} onClick={() => setActiveSlide(index)} aria-label={`Mostrar imagem ${index + 1}`} aria-current={index === activeSlide ? "true" : undefined} />)}</div>}</div><div className="drink-spotlight__copy"><span className="eyebrow eyebrow--light"><Flame size={14} /> Nova parada da casa</span><h2>Brinde com<br /><em>uma caipi.</em></h2><p>Caipirinhas gourmet feitas na hora, com frutas de verdade e aquele toque Crazy.</p><div className="drink-flavors"><span>Limão</span><span>Morango</span><span>Maracujá</span><span>Kiwi</span></div><button type="button" onClick={onViewDrinks}>Ver bebidas <ArrowRight size={17} /></button></div><div className="drink-price"><small>a partir de</small><strong>R$44<sup>,99</sup></strong></div></section>;
+  return <section className="drink-spotlight" id="bebidas" aria-label="Destaque de bebidas"><div className="drink-spotlight__image"><img key={activeImage} src={activeImage} alt={`Caipirinhas gourmet Crazy Chicken — imagem ${activeSlide + 1} de ${images.length}`} loading="lazy" decoding="async" onError={(event) => recoverImage(event, "/drinks-menu.jpeg")} />{images.length > 1 && <><button type="button" className="drink-carousel__arrow drink-carousel__arrow--previous" onClick={showPrevious} aria-label="Mostrar imagem anterior"><span aria-hidden>‹</span></button><button type="button" className="drink-carousel__arrow drink-carousel__arrow--next" onClick={showNext} aria-label="Mostrar próxima imagem"><span aria-hidden>›</span></button><div className="drink-carousel" aria-label="Escolher imagem do banner">{images.map((image, index) => <button type="button" key={`${image}-${index}`} className={index === activeSlide ? "active" : ""} onClick={() => setActiveSlide(index)} aria-label={`Mostrar imagem ${index + 1}`} aria-current={index === activeSlide ? "true" : undefined} />)}</div></>}</div><div className="drink-spotlight__copy"><div className="drink-spotlight__topline"><span className="eyebrow eyebrow--light"><Flame size={14} /> Nova parada da casa</span><div className="drink-price"><small>a partir de</small><strong>R$44<sup>,99</sup></strong></div></div><h2>Brinde com<br /><em>uma caipi.</em></h2><p>Caipirinhas gourmet feitas na hora, com frutas de verdade e aquele toque Crazy.</p><div className="drink-flavors"><span>Limão</span><span>Morango</span><span>Maracujá</span><span>Kiwi</span></div><button type="button" onClick={onViewDrinks}>Ver bebidas <ArrowRight size={17} /></button></div></section>;
 }
 
 function mapProduct(item: CatalogProduct): Product {
