@@ -203,8 +203,8 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
   const patchSettings = (patch: Partial<AdminSettings>, scope: SettingsScope) => { setSettings((current) => ({ ...current, ...patch, appearance: patch.appearance ? { ...current.appearance, ...patch.appearance } : current.appearance })); settingsDirtyRef.current = { ...settingsDirtyRef.current, [scope]: true }; setSettingsDirty((current) => ({ ...current, [scope]: true })); };
   const updateOrderStatus = async (id: number, status: string) => { const response = await adminFetch("/api/admin/orders", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) }); if (!response.ok) return notify("Não foi possível atualizar o status."); const order = (await response.json() as { order: AdminOrder }).order; setOrders((items) => items.map((item) => item.id === id ? order : item)); setSelectedOrder((current) => current?.order.id === id ? { ...current, order } : current); notify("Status atualizado."); };
   const openOrder = async (id: number) => { const response = await adminFetch(`/api/admin/orders?id=${id}`); if (response.ok) setSelectedOrder(await response.json() as { order: AdminOrder; items: OrderItem[] }); else notify("Não foi possível abrir o pedido."); };
-  const upload = async (file: File) => {
-    const body = new FormData(); body.append("file", file);
+  const upload = async (file: File, scope?: "products") => {
+    const body = new FormData(); body.append("file", file); if (scope) body.append("scope", scope);
     const response = await adminFetch("/api/admin/uploads", { method: "POST", body });
     const data = await response.json().catch(() => ({})) as { key?: string; url?: string; verified?: boolean; error?: string };
     if (!response.ok || !data.key || !data.url || data.verified !== true) throw new Error(data.error ?? "Não foi possível enviar a imagem.");
@@ -241,7 +241,7 @@ export function AdminPanel({ products, currentUser, initialSection = "visao" }: 
       {section === "atividades" && currentUser.role === "owner" && <AuditSection entries={audit} />}
       {section === "seguranca" && <SecuritySection currentUser={currentUser} notify={notify} />}
     </main>
-    {editing && <ProductEditor product={editing} categories={categories.map((category) => category.name)} onClose={() => setEditing(null)} onSave={saveProduct} onUpload={upload} />}
+    {editing && <ProductEditor product={editing} categories={categories.map((category) => category.name)} onClose={() => setEditing(null)} onSave={saveProduct} onUpload={(file) => upload(file, "products")} />}
     {selectedOrder && <OrderDetails data={selectedOrder} onClose={() => setSelectedOrder(null)} onStatus={updateOrderStatus} />}
   </div>;
 }
