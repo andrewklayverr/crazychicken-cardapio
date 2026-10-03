@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { getDb } from "../db";
 import { categories, deliveryZones, productOptions, products, storeSettings } from "../db/schema";
 import { fallbackCategories, fallbackProducts, fallbackSettings, type CatalogProduct } from "./catalog";
@@ -12,6 +13,24 @@ export function assetUrl(key: string | null | undefined) {
 }
 
 type StoredSettings = typeof storeSettings.$inferSelect;
+
+type E2EStoreMode = "open" | "closed";
+
+async function getE2EStoreMode(): Promise<E2EStoreMode | null> {
+  if (process.env.NODE_ENV === "production" || process.env.E2E_MODE !== "true") return null;
+  const value = (await headers()).get("x-crazy-chicken-e2e-store");
+  return value === "open" || value === "closed" ? value : null;
+}
+
+function getE2ESettings(mode: E2EStoreMode) {
+  const settings = {
+    ...fallbackSettings,
+    whatsappNumber: "5511999999999",
+    orderingMode: mode,
+    defaultDeliveryFeeCents: 700,
+  };
+  return { ...settings, updatedAt: null, availability: getStoreAvailability(settings) };
+}
 
 function normalizedSettings(setting: StoredSettings) {
   const weeklySchedule = parseWeeklySchedule(setting.weeklyScheduleJson);
@@ -33,6 +52,11 @@ function unavailableSettings() {
 }
 
 export async function getPublicStoreConfig() {
+  const e2eMode = await getE2EStoreMode();
+  if (e2eMode) {
+    const settings = getE2ESettings(e2eMode);
+    return { settings, availability: settings.availability, updatedAt: null, configurationError: false };
+  }
   try {
     const [setting] = await getDb().select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
     if (!setting) throw new Error("store-settings-not-found");
@@ -84,6 +108,21 @@ async function getZones() {
 }
 
 export async function getStorefront() {
+  const e2eMode = await getE2EStoreMode();
+  if (e2eMode) {
+    return {
+      categories: fallbackCategories,
+      products: fallbackProducts,
+      settings: getE2ESettings(e2eMode),
+      deliveryZones: [
+        { id: 1, name: "Centro", feeCents: 500 },
+        { id: 2, name: "Vila Amorim", feeCents: 800 },
+      ],
+      configurationError: false,
+      catalogError: false,
+      zonesError: false,
+    };
+  }
   const [config, catalogResult, zonesResult] = await Promise.all([
     getPublicStoreConfig(),
     getCatalog().then((value) => ({ value, error: false as const })).catch((error) => {
