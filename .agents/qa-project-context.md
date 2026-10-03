@@ -1,6 +1,6 @@
 # Contexto de QA — Crazy Chicken
 
-Documento de referência para as demais skills de qualidade. Estado levantado no checkout em 2 de outubro de 2026. Fatos externos à máquina, como configuração efetiva da Hostinger, banco de produção, e-mail e dados reais, permanecem identificados como não verificados.
+Documento de referência para as demais skills de qualidade. Estado atualizado no checkout em 3 de outubro de 2026. Fatos externos à máquina, como configuração efetiva da Hostinger, banco de produção, e-mail e dados reais, permanecem identificados como não verificados.
 
 ## Product
 
@@ -63,8 +63,10 @@ O produto atual não possui fluxo de pagamento PIX ou cartão integrado. Qualque
 
 ### Visual, acessibilidade e performance
 
-- **Estado:** responsividade funcional automatizada com Playwright em 320, 375 e 414 px; não há regressão visual por comparação de screenshots, auditoria dedicada de acessibilidade ou teste de performance.
-- **Cobertura atual:** menu, cardápio, adição ao carrinho e navegação mobile do painel são exercitados nos três viewports.
+- **Estado:** regressão visual automatizada com Playwright em Chromium no desktop 1440 × 900 e no mobile 320 × 720, 375 × 812 e 414 × 896. Ainda não há auditoria dedicada de acessibilidade ou teste de performance.
+- **Cobertura visual:** 31 baselines versionados cobrem topo e hero, logo com tolerância de zero pixels, banner de bebidas, dois cards de produto, carrinho, dashboard administrativo e menu lateral do painel nos três tamanhos mobile.
+- **Estabilidade:** relógio e dados administrativos são fixados, APIs usam mocks determinísticos, animações e cursores são desativados durante a captura e o conteúdo dinâmico do navegador de desenvolvimento é ocultado.
+- **Comandos:** `npm run test:visual` compara os baselines e `npm run test:visual:update` atualiza imagens após revisão explícita. O processo de aprovação está documentado em `e2e/VISUAL_TESTING.md`.
 
 ### Validação executada neste levantamento
 
@@ -74,6 +76,8 @@ O produto atual não possui fluxo de pagamento PIX ou cartão integrado. Qualque
 - `npm.cmd run test:e2e:types`: passou.
 - `npm.cmd run test:e2e:list`: listou 13 execuções em 4 arquivos.
 - `npm.cmd run test:e2e`: 13 de 13 execuções passaram em Chromium desktop e nos três viewports mobile.
+- `npm.cmd run test:visual:update`: gerou 31 baselines Windows para 11 cenários visuais.
+- `npm.cmd run test:visual`: 11 de 11 cenários passaram na comparação subsequente dos baselines.
 - `node --test tests/admin-recovery.test.cjs tests/store-hours.test.cjs`: 10 passaram e 3 falharam. As falhas de recuperação acontecem porque a senha fixa do teste não contém número, contrariando a regra atual; os cenários de concorrência e rollback não chegam ao trecho que pretendem validar.
 - `npm.cmd run lint`: passou sem erros, com 12 avisos existentes de `@next/next/no-img-element`.
 - `npm.cmd run build`: passou com Next.js 16.3.6, webpack, TypeScript e geração de 27 páginas e rotas.
@@ -82,11 +86,11 @@ O produto atual não possui fluxo de pagamento PIX ou cartão integrado. Qualque
 ## CI/CD
 
 - **CI detectado:** GitHub Actions em `.github/workflows/e2e.yml`, acionado em pull request e manualmente.
-- **Remotos detectados:** `origin` aponta para o GitHub `andrewklayverr/crazychicken-cardapio`; também existe um remote `sites` de tooling. O checkout analisado estava em `main`, alinhado com `origin/main` no commit `aef4b7a`.
+- **Remotos detectados:** `origin` aponta para o GitHub `andrewklayverr/crazychicken-cardapio`; também existe um remote `sites` de tooling. O checkout analisado estava em `main`, alinhado com `origin/main` no commit `0c0b03c` antes das mudanças visuais locais.
 - **Deploy documentado:** Hostinger executa `npm run build` e `npm start` com Node 22 ou superior. O build usa o fallback webpack configurado no projeto.
-- **Gate E2E:** instala dependências e Chromium, valida tipos da suíte, executa lint e roda os 13 cenários. O workflow ainda não foi configurado como proteção obrigatória de branch e não publica a aplicação.
+- **Gates Playwright:** o job funcional instala dependências e Chromium, valida tipos, executa lint e roda os 13 cenários. Um job visual separado em `windows-latest` baixa os baselines por Git LFS e bloqueia diferenças acima do limite configurado. O workflow ainda não foi configurado como proteção obrigatória de branch e não publica a aplicação.
 - **Banco:** backup e migração são operações separadas. A documentação exige backup antes de migrações e confirmação das migrações no MariaDB antes de considerar uma publicação pronta.
-- **Artefatos:** em falhas, o workflow publica `playwright-report` e `test-results`, incluindo relatório HTML, screenshots, traces e vídeos de retry no CI.
+- **Artefatos:** em falhas, o workflow publica `playwright-report` e `test-results`; o job visual publica o artefato `visual-regression-report` com imagens esperadas, atuais e diffs para revisão.
 - **Rollback:** não existe procedimento automatizado detectado; o rollback depende do estado do deploy na Hostinger, do Git e do backup do banco e uploads.
 
 ## Environments
@@ -123,7 +127,7 @@ Não existem metas de cobertura, flakiness ou duração declaradas no código, n
 | Paridade de banco e migrações | Crítico | Schema incompleto pode derrubar pedidos, login, configurações ou equipe após publicação. | Alto × médio. Testar backup, aplicação ordenada das migrações 001 a 005, schema compatível, conexão real e rollback operacional. Não confundir formato de `DATABASE_URL` com conexão validada. |
 | Horários, entrega, bairros e taxas | Importante | A loja pode aceitar pedido fechado, cobrar taxa errada ou recusar uma entrega válida. | Alto × médio. Há E2E determinístico para loja fechada, retirada, entrega e taxa; manter cobertura unitária para America/Sao_Paulo, virada de meia-noite, modo manual e intervalos sobrepostos. |
 | WhatsApp e e-mail transacional | Importante | A equipe pode não receber o pedido ou o cliente pode não conseguir confirmar convite e recuperação. | Médio × médio. A URL `wa.me` e o payload do pedido são cobertos com mock; ainda faltam WhatsApp real, ausência de número, Resend, origem dos links e falhas do provedor. |
-| Responsividade e acessibilidade do fluxo de compra e painel | Importante | Falhas em mobile impedem a maioria dos clientes de comprar ou da equipe de operar. | Alto × médio. Há cobertura funcional em 320, 375 e 414 px com locators acessíveis; faltam teclado completo, foco, auditoria automatizada e regressão visual. |
+| Responsividade e acessibilidade do fluxo de compra e painel | Importante | Falhas em mobile impedem a maioria dos clientes de comprar ou da equipe de operar. | Alto × médio. Há cobertura funcional e visual em 320, 375 e 414 px; ainda faltam teclado completo, foco e auditoria automatizada de acessibilidade. |
 | Persistência do carrinho | Importante | Recarregar ou fechar a página pode apagar a seleção do cliente e reduzir conversão. | Médio × alto. O estado atual é apenas em memória e não persiste após recarregar; tratar como comportamento conhecido até existir requisito e implementação de persistência. |
 | Cabeçalhos, CSP e exposição de dados | Monitor | Configuração incorreta pode bloquear funcionalidades ou expor dados do cliente. | Alto × baixo a médio. Revalidar scripts, imagens, conexões, cookies, erros e payloads de API após mudanças de autenticação ou infraestrutura. |
 

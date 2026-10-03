@@ -1,0 +1,25 @@
+*,
+*::before,
+*::after {
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  scroll-behavior: auto !important;
+  transition: none !important;
+  caret-color: transparent !important;
+}
+
+html,
+body,
+* {
+  scrollbar-width: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+nextjs-portal,
+[data-nextjs-toast],
+[data-next-badge-root] {
+  display: none !important;
+}

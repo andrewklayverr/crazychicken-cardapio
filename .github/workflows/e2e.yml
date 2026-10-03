@@ -43,3 +43,32 @@ jobs:
             playwright-report
             test-results
           retention-days: 14
+
+  visual:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout with visual baselines
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run visual regression
+        run: npm run test:visual
+
+      - name: Upload visual diffs and report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 14

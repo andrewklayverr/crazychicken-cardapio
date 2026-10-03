@@ -19,7 +19,7 @@ type OrderApi = {
 };
 
 type AdminApi = {
-  install: () => Promise<void>;
+  install: (options?: { timestamp?: string }) => Promise<void>;
 };
 
 type Fixtures = {
@@ -76,8 +76,8 @@ export const test = base.extend<Fixtures & Options>({
   },
 
   adminApi: async ({ page }, use) => {
-    const now = new Date().toISOString();
-    const install = async () => {
+    const install = async (options?: { timestamp?: string }) => {
+      const now = options?.timestamp ?? new Date().toISOString();
       await page.route("**/api/admin/orders**", async (route) => {
         await route.fulfill({
           json: {
