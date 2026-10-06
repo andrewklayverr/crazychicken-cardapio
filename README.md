@@ -12,9 +12,9 @@
 
 ## Sobre o projeto
 
-O Crazy Chicken é uma aplicação web completa para restaurantes que precisam publicar um cardápio, receber pedidos e acompanhar a operação sem depender de uma plataforma de marketplace.
+O Crazy Chicken é uma aplicação web completa para uma loja que precisa publicar um cardápio, receber pedidos e acompanhar a operação sem depender de uma plataforma de marketplace.
 
-O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dados pelo WhatsApp. A equipe administra catálogo, aparência, horários, bairros, taxas, pedidos e acessos individuais em um painel protegido.
+O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dados pelo WhatsApp. A equipe administra catálogo, aparência, horários, bairros, taxas, pedidos e acessos individuais em um painel protegido. A versão atual é de uma única loja; uma futura solução para vários clientes deverá ser criada separadamente.
 
 > Marca: **Crazy Chicken**<br>
 > Domínio atual: **[crazychicken247.com.br](https://crazychicken247.com.br)**<br>
@@ -25,7 +25,9 @@ O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dado
 ### Para clientes
 
 - Cardápio responsivo para celular e desktop.
-- Categorias, busca, destaques e produtos mais pedidos.
+- Banner principal com imagem própria para desktop e mobile.
+- Categorias, busca, destaques, produtos mais pedidos e categoria Novidades.
+- Carrossel automático de bebidas com setas e indicadores manuais.
 - Personalizações de sabores e extras.
 - Carrinho persistente e cálculo de subtotal, entrega e total.
 - Retirada no balcão ou entrega por bairros e taxas.
@@ -33,6 +35,7 @@ O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dado
 - Acompanhamento do pedido por código.
 - Confirmação organizada pelo WhatsApp, com modelos completo, compacto e rápido.
 - Loja aberta, fechada ou automática conforme a agenda.
+- Link clicável para o Instagram oficial da loja.
 
 ### Para a equipe
 
@@ -40,14 +43,45 @@ O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dado
 - Atualização dos pedidos e sinalização de novas pendências.
 - Detalhes completos do pedido e alteração de status.
 - Cadastro, edição, disponibilidade e destaque de produtos.
+- Botão de adicionar ao pedido com texto explícito, área de toque ampliada e foco visível.
 - Editor de opções, sabores e extras.
 - Aparência da loja com prévia e cores personalizadas.
+- Upload de logo, banners, fotos de produtos e imagens do carrossel de bebidas.
+- Pré-visualização compacta das mídias no painel para facilitar a edição em telas menores.
 - Horários semanais, virada de dia, abertura manual e fechamento manual.
 - Bairros, taxas de entrega e pedido mínimo.
 - Convites e acessos individuais por função.
 - Suspensão e reativação de membros da equipe.
 - Histórico de atividades administrativas.
 - Logout, recuperação segura do proprietário e MFA opcional.
+
+## Imagens e armazenamento persistente
+
+As imagens enviadas pelo painel não ficam no computador do administrador. O navegador envia o arquivo para a aplicação, e a Hostinger grava o conteúdo em uma pasta persistente do servidor.
+
+O banco guarda somente uma chave relativa, como:
+
+```text
+uploads/uuid-foto.webp
+```
+
+Regras atuais:
+
+- `UPLOAD_DIR` aponta para a pasta persistente da hospedagem.
+- Fotos de produtos ficam em `uploads/produtos/`.
+- Logo e banners ficam na pasta principal de uploads.
+- O caminho absoluto do servidor não é enviado ao navegador.
+- O arquivo é validado e confirmado antes da chave ser salva no banco.
+- Imagens antigas devem ser mantidas para evitar perdas acidentais.
+- A pasta de uploads precisa entrar no backup da Hostinger.
+- Deploys do GitHub não devem apagar o conteúdo persistente.
+
+Dimensões recomendadas para os banners principais:
+
+| Uso | Tamanho recomendado |
+| --- | ---: |
+| Desktop | `1920 × 680 px` |
+| Mobile | `1080 × 1350 px` |
 
 ## Visão rápida
 
@@ -78,13 +112,15 @@ O cliente monta o pedido na loja, escolhe retirada ou entrega e confirma os dado
 Cliente
   └─ Loja pública Next.js
        ├─ catálogo, carrinho e checkout
+       ├─ banners e carrossel de bebidas
        ├─ disponibilidade da loja
        └─ registro do pedido + WhatsApp
 
 Equipe
   └─ Painel administrativo Next.js
        ├─ dashboard e pedidos
-       ├─ produtos e aparência
+       ├─ produtos, categorias e aparência
+       ├─ uploads persistentes
        ├─ configurações operacionais
        └─ equipe, sessões e auditoria
 
@@ -217,6 +253,8 @@ UPLOAD_DIR=/home/USUARIO_HOSTINGER/domains/crazychicken247.com.br/uploads
 
 O arquivo é enviado pelo navegador ao servidor, validado e confirmado antes de sua chave ser gravada no produto. A pasta de uploads precisa fazer parte do backup da hospedagem e não deve ser removida durante deploys.
 
+As fotos novas de produtos são organizadas em `uploads/produtos/`. Mantenha `UPLOAD_DIR` apontando para a pasta principal `uploads`; a aplicação acrescenta a subpasta de produtos quando o envio vem do cadastro de produto. Depois de trocar uma foto, confirme a vitrine em outro dispositivo e faça um novo deploy para verificar a persistência.
+
 O domínio usado no `APP_URL`, o remetente do Resend e os registros DNS precisam estar alinhados. Consulte [`HOSTINGER.md`](HOSTINGER.md) para o procedimento de migração, backup, domínio, e-mail e variáveis de produção.
 
 ## Segurança
@@ -234,6 +272,33 @@ Os controles relevantes ficam documentados em [`DESENVOLVIMENTO_SEGURO.md`](DESE
 - auditoria das ações administrativas.
 
 Uma auditoria de segurança não substitui a validação do ambiente produtivo. Antes de publicar alterações de autenticação ou infraestrutura, rode os testes, o lint, o build e valide os fluxos no staging ou no domínio de teste.
+
+## Qualidade e testes
+
+Os fluxos prioritários são:
+
+- navegação, categorias e busca do cardápio;
+- adição de produtos, opções e observações;
+- carrinho e cálculo do total;
+- retirada, entrega e horários da loja;
+- geração do pedido e abertura do WhatsApp;
+- acompanhamento por código;
+- upload e leitura de imagens após novo deploy;
+- edição de produtos e aparência no painel;
+- responsividade em telas pequenas e desktop;
+- navegação por teclado nos controles principais.
+
+Validações recomendadas antes de publicar:
+
+```bash
+npm run lint
+npm run test:store
+npm run test:whatsapp
+npm run test:e2e:types
+npm run build
+```
+
+Os testes locais não substituem a validação da Hostinger, do banco remoto, do domínio, do armazenamento persistente ou dos serviços externos.
 
 ## Estrutura principal
 
@@ -257,7 +322,11 @@ docs/showcase/        imagens de apresentação do projeto
 - Histórico de clientes com consentimento.
 - Fluxo de cozinha e impressão de pedidos.
 - Despesas, margem e fechamento de caixa.
-- Pix e pagamentos online.
+- Pagamentos online após homologação específica.
+
+## Privacidade do repositório
+
+Este README documenta somente a arquitetura pública e os fluxos funcionais do projeto. Credenciais, dados pessoais, tokens, hashes, códigos de recuperação, caminhos internos com identificadores de conta e configurações privadas de produção ficam fora do repositório.
 
 ## Licença
 
