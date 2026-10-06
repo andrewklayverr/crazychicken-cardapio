@@ -101,16 +101,17 @@ h1,h2,h3,p { margin-top:0; }
 .product-card:hover .product-card__image { transform:scale(1.05); }
 .product-card__badge { position:absolute; top:10px; left:10px; padding:5px 8px; background:var(--yellow); color:var(--ink); font-size:10px; font-weight:900; text-transform:uppercase; border-radius:5px; }
 .product-card__closed { position:absolute; top:10px; right:10px; padding:5px 8px; background:#2a211c; color:#fff; font-size:10px; font-weight:900; text-transform:uppercase; border-radius:5px; letter-spacing:.04em; }
-.product-card__quick-add { position:absolute; right:10px; bottom:10px; border:0; background:var(--red); color:#fff; display:grid; place-items:center; width:34px; height:34px; border-radius:50%; box-shadow:0 4px 10px #0004; }
 .product-card__body { padding:14px 15px 16px; }
 .product-card__meta { display:flex; align-items:center; gap:5px; color:#9b8d78; font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-weight:800; }
 .product-card__dot { width:3px; height:3px; background:var(--red); border-radius:50%; }
 .product-card h3 { margin:10px 0 5px; font-size:18px; letter-spacing:-.035em; }
 .product-card p { min-height:39px; margin:0 0 15px; color:#847967; font-size:13px; line-height:1.45; }
-.product-card__footer { display:flex; align-items:center; justify-content:space-between; gap:7px; }
+.product-card__footer { display:grid; gap:9px; }
 .product-card__footer>strong { font-size:18px; letter-spacing:-.04em; }
-.product-card__add { display:flex; align-items:center; gap:5px; border:0; background:transparent; color:var(--red); font-size:12px; font-weight:900; }
-.product-card__add:hover { gap:8px; }
+.product-card__add { width:100%; min-height:44px; display:flex; align-items:center; justify-content:center; gap:7px; border:0; border-radius:8px; padding:9px 11px; background:var(--red); color:#fff; font-size:12px; line-height:1.15; font-weight:900; text-align:center; cursor:pointer; transition:transform .18s ease,filter .18s ease,box-shadow .18s ease; }
+.product-card__add:hover:not(:disabled) { filter:brightness(.92); transform:translateY(-1px); }
+.product-card__add:focus-visible { outline:3px solid var(--yellow); outline-offset:2px; box-shadow:0 0 0 2px #fff; }
+.product-card__add:disabled { cursor:not-allowed; opacity:.68; }
 .empty-state { padding:50px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:9px; color:#887c69; }
 .empty-state strong { color:var(--ink); }
 .order-callout { max-width:1240px; margin:0 auto 72px; padding:40px 48px; background:var(--red); border-radius:17px; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:24px; overflow:hidden; position:relative; }
@@ -193,7 +194,8 @@ html, body { max-width:100%; overflow-x:hidden; }
 .product-card h3,.product-card p { min-width:0; overflow-wrap:anywhere; }
 .product-card__meta > span:not(.product-card__dot) { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .product-card__footer { min-width:0; }
-.product-card__footer>strong,.product-card__add { flex-shrink:0; white-space:nowrap; }
+.product-card__footer>strong { white-space:nowrap; }
+.product-card__add span { overflow-wrap:anywhere; }
 .product-options-dialog { background:#fff8e9; color:#141414; opacity:1; border:1px solid #e6d8be; }
 .option-group { border:0; padding:0; margin:0 0 18px; }
 .option-group legend { width:100%; color:var(--ink); font-size:13px; font-weight:900; margin-bottom:9px; }
@@ -258,7 +260,7 @@ html, body { max-width:100%; overflow-x:hidden; }
   .product-card__meta > span:last-child { flex:0 0 auto; }
   .product-card h3 { margin:8px 0 4px; font-size:15px; line-height:1.12; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .product-card p { min-height:0; margin-bottom:10px; font-size:11px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .product-card__footer { align-items:center; flex-direction:row; gap:6px; }.product-card__footer>strong { font-size:15px; }.product-card__add { font-size:10px; gap:3px; }
+  .product-card__footer { gap:7px; }.product-card__footer>strong { font-size:15px; }.product-card__add { min-height:42px; padding:8px 6px; font-size:10px; gap:5px; }
   .cart-drawer { width:100%; padding:22px 17px; }.drawer-header h2 { font-size:27px; }
   .tracking-page { padding:14px; }.tracking-card { padding:24px 18px; }.tracking-card h1 { font-size:34px; }
   .tracking-form { grid-template-columns:1fr; }.tracking-form .primary-button { width:100%; }
@@ -268,8 +270,8 @@ html, body { max-width:100%; overflow-x:hidden; }
 @media (max-width:360px) {
   .featured-strip { grid-template-columns:1fr; }
   .product-card__image-wrap { height:112px; }
-  .product-card__add { width:29px; height:29px; justify-content:center; font-size:0; gap:0; }
-  .product-card__add svg { width:16px; height:16px; }
+  .product-card__add { min-height:42px; font-size:10px; }
+  .product-card__add svg { width:14px; height:14px; flex:0 0 14px; }
 }
 
 .danger-button { min-height:44px; flex-shrink:0; border:1px solid #edb7b1; border-radius:8px; padding:8px 13px; background:#fff4f1; color:var(--red); font-size:13px; font-weight:800; }
@@ -570,7 +572,7 @@ html, body { max-width:100%; overflow-x:hidden; }
 .storefront-shell .cart-button,
 .storefront-shell .drink-spotlight { background:var(--store-strong); color:#fff; }
 .storefront-shell .product-card__image-wrap { background:var(--store-surface-alt); }
-.storefront-shell .product-card__quick-add,
+.storefront-shell .product-card__add,
 .storefront-shell .floating-cart,
 .storefront-shell .checkout-button,
 .storefront-shell .primary-button,
@@ -581,7 +583,6 @@ html, body { max-width:100%; overflow-x:hidden; }
 .storefront-shell .product-card__closed,
 .storefront-shell .cart-button b,
 .storefront-shell .floating-cart b { background:var(--store-accent); color:#171411; }
-.storefront-shell .product-card__add,
 .storefront-shell .product-card__meta .product-card__dot,
 .storefront-shell .featured-strip__item small,
 .storefront-shell .featured-strip__item svg,
