@@ -571,7 +571,7 @@ html, body { max-width:100%; overflow-x:hidden; }
 .storefront-shell .category-pill--active,
 .storefront-shell .cart-button,
 .storefront-shell .drink-spotlight { background:var(--store-strong); color:#fff; }
-.storefront-shell .product-card__image-wrap { background:var(--store-surface-alt); }
+.storefront-shell .product-card__image-wrap { background:#fff; }
 .storefront-shell .product-card__add,
 .storefront-shell .floating-cart,
 .storefront-shell .checkout-button,
