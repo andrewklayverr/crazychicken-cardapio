@@ -14,6 +14,7 @@
     "test:store": "node --experimental-strip-types scripts/test-store-rules.mjs",
     "test:security": "node --experimental-strip-types scripts/test-security.mjs",
     "test:whatsapp": "node --experimental-strip-types scripts/test-whatsapp-order.mjs",
+    "test:mercado-pago": "node --experimental-strip-types scripts/test-mercado-pago.mjs",
     "test:e2e": "playwright test --grep-invert @visual",
     "test:e2e:list": "playwright test --list",
     "test:e2e:types": "tsc --noEmit -p tsconfig.e2e.json",

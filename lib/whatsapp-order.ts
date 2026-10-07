@@ -16,7 +16,7 @@ export function normalizeWhatsAppTemplate(value: unknown): WhatsAppTemplate {
   return isWhatsAppTemplate(value) ? value : "complete";
 }
 
-type OrderForMessage = Pick<typeof orders.$inferSelect, "code" | "fulfillmentType" | "customerName" | "customerPhone" | "address" | "neighborhood" | "notes" | "subtotalCents" | "deliveryFeeCents" | "totalCents">;
+type OrderForMessage = Pick<typeof orders.$inferSelect, "code" | "fulfillmentType" | "customerName" | "customerPhone" | "address" | "neighborhood" | "notes" | "subtotalCents" | "deliveryFeeCents" | "totalCents" | "paymentMethod" | "paymentStatus">;
 type ItemForMessage = Pick<typeof orderItems.$inferSelect, "productName" | "quantity" | "unitPriceCents" | "optionsJson" | "itemNotes">;
 
 function money(cents: number) {
@@ -49,6 +49,11 @@ function fulfillmentLine(order: OrderForMessage) {
     : "Retirada no balcão";
 }
 
+function paymentLine(order: OrderForMessage) {
+  if (order.paymentMethod !== "pix") return "Pagamento: na entrega/retirada";
+  return order.paymentStatus === "paid" ? "Pagamento: PIX confirmado" : "Pagamento: PIX pelo Mercado Pago (confirmação automática)";
+}
+
 export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessage[], template: WhatsAppTemplate = "complete") {
   const selectedTemplate = normalizeWhatsAppTemplate(template);
   const lines = itemLines(items);
@@ -63,6 +68,7 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
       "",
       `*Total:* ${money(order.totalCents)}`,
       `*Recebimento:* ${fulfillmentLine(order)}`,
+      `*${paymentLine(order)}*`,
       "",
       "Aguardo a confirmação. Obrigado!",
     ].join("\n");
@@ -78,6 +84,7 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
       `*Cliente:* ${order.customerName}`,
       `*Telefone:* ${order.customerPhone}`,
       `*Recebimento:* ${fulfillmentLine(order)}`,
+      `*${paymentLine(order)}*`,
       `*Total:* ${money(order.totalCents)}`,
     ].join("\n");
   }
@@ -92,6 +99,7 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
     `Nome: ${order.customerName}`,
     `Telefone: ${order.customerPhone}`,
     `Recebimento: ${fulfillmentLine(order)}`,
+    paymentLine(order),
     order.notes ? `Observações: ${order.notes}` : null,
     "",
     "*Valores:*",

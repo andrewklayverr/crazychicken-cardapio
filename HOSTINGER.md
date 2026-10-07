@@ -43,6 +43,14 @@ Use um plano Hostinger Business ou Cloud com Node.js e configure no hPanel:
 
 Não publique arquivos `.env`, senhas ou a pasta `backups/` no repositório.
 
+## PIX Mercado Pago
+
+Antes de publicar o checkout com PIX, faça backup e importe uma vez `db/migrations/006_mercado_pago_pix.sql`. No hPanel, configure `MERCADO_PAGO_ACCESS_TOKEN` com o Access Token do vendedor, `MERCADO_PAGO_WEBHOOK_SECRET` com a assinatura secreta gerada pelo painel e `MERCADO_PAGO_PIX_EXPIRES_IN=1800`. Nenhuma dessas variáveis pode usar o prefixo `NEXT_PUBLIC_`.
+
+Em **Suas integrações > Webhooks**, configure a URL de teste e depois a de produção como `https://crazychicken247.com.br/api/payments/mercado-pago/webhook`, selecione o evento **Order (Mercado Pago)** e salve. Copie a assinatura secreta exibida para `MERCADO_PAGO_WEBHOOK_SECRET`. Durante a homologação, use o Access Token de teste do usuário vendedor; ao assumir a conta oficial do cliente, troque somente o Access Token e a assinatura secreta pelas credenciais de produção dessa conta.
+
+Valide em staging os quatro fluxos: retirada com pagamento ao receber, entrega com pagamento ao receber, retirada com PIX e entrega com PIX. Para PIX, use o e-mail da conta compradora de teste, confira o valor calculado no servidor, o QR Code/copia-e-cola, a confirmação no checkout, a indicação no acompanhamento e o status no painel administrativo. Só depois troque para as credenciais de produção do cliente.
+
 ## Modelos de mensagem do WhatsApp
 
 Depois de fazer backup, importe `db/migrations/005_whatsapp_templates.sql` no phpMyAdmin antes de publicar esta versao. O campo recebe `complete` automaticamente para manter o formato completo nas instalacoes existentes.

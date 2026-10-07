@@ -7,7 +7,9 @@ type StoreMode = "open" | "closed";
 export type OrderRequest = {
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   fulfillmentType: "pickup" | "delivery";
+  paymentMethod: "pix" | "pay_on_fulfillment";
   address: string;
   neighborhood: string;
   notes: string;
@@ -65,12 +67,19 @@ export const test = base.extend<Fixtures & Options>({
         status: 201,
         json: {
           order: { code: "CC-E2E-0001", totalCents },
+          payment: payload.paymentMethod === "pix" ? { method: "pix", status: "pending", brCode: "000201010212TESTEPIX6304ABCD", paymentLinkUrl: "https://www.mercadopago.com.br/sandbox/payments/test/ticket", qrCodeUrl: "/pix-e2e.png" } : { method: "pay_on_fulfillment", status: "not_requested" },
           whatsappUrl: "https://wa.me/5511999999999?text=Pedido%20CC-E2E-0001",
         },
       });
     });
     await context.route("https://wa.me/**", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: "<title>WhatsApp E2E</title>" });
+    });
+    await page.route("**/api/orders/CC-E2E-0001/payment?**", async (route) => {
+      await route.fulfill({ json: { payment: { method: "pix", status: "pending", brCode: "000201010212TESTEPIX6304ABCD", paymentLinkUrl: "https://www.mercadopago.com.br/sandbox/payments/test/ticket", qrCodeUrl: "/pix-e2e.png" }, whatsappUrl: null } });
+    });
+    await page.route("**/pix-e2e.png", async (route) => {
+      await route.fulfill({ status: 200, contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4h8AAAAASUVORK5CYII=", "base64") });
     });
     await use({ requests });
   },

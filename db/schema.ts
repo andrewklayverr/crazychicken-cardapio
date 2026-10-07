@@ -1,4 +1,4 @@
-import { boolean, int, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, longtext, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
@@ -71,12 +71,23 @@ export const orders = mysqlTable("orders", {
   fulfillmentType: varchar("fulfillment_type", { length: 20 }).notNull(),
   customerName: varchar("customer_name", { length: 120 }).notNull(),
   customerPhone: varchar("customer_phone", { length: 40 }).notNull(),
+  customerEmail: varchar("customer_email", { length: 190 }),
   address: varchar("address", { length: 255 }),
   neighborhood: varchar("neighborhood", { length: 100 }),
   notes: text("notes"),
   subtotalCents: int("subtotal_cents").notNull(),
   deliveryFeeCents: int("delivery_fee_cents").notNull().default(0),
   totalCents: int("total_cents").notNull(),
+  paymentMethod: varchar("payment_method", { length: 30 }).notNull().default("pay_on_fulfillment"),
+  paymentStatus: varchar("payment_status", { length: 30 }).notNull().default("not_requested"),
+  mercadoPagoOrderId: varchar("mercado_pago_order_id", { length: 120 }).unique(),
+  mercadoPagoPaymentId: varchar("mercado_pago_payment_id", { length: 120 }),
+  pixBrCode: text("pix_br_code"),
+  pixQrCodeBase64: longtext("pix_qr_code_base64"),
+  pixPaymentLinkUrl: varchar("pix_payment_link_url", { length: 500 }),
+  pixExpiresAt: timestamp("pix_expires_at", { mode: "string" }),
+  pixPaidAt: timestamp("pix_paid_at", { mode: "string" }),
+  paymentUpdatedAt: timestamp("payment_updated_at", { mode: "string" }),
   idempotencyKey: varchar("idempotency_key", { length: 120 }).notNull().unique(),
   whatsappSentAt: timestamp("whatsapp_sent_at", { mode: "string" }),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),

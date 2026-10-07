@@ -7,10 +7,12 @@ export class CartDrawer {
   readonly deliveryButton: Locator;
   readonly nameInput: Locator;
   readonly phoneInput: Locator;
+  readonly emailInput: Locator;
   readonly addressInput: Locator;
   readonly neighborhoodSelect: Locator;
   readonly notesInput: Locator;
   readonly submitButton: Locator;
+  readonly pixButton: Locator;
   readonly whatsappButton: Locator;
   readonly trackingLink: Locator;
 
@@ -21,10 +23,12 @@ export class CartDrawer {
     this.deliveryButton = root.getByRole("button", { name: "Entregar" });
     this.nameInput = root.getByLabel("Nome", { exact: true });
     this.phoneInput = root.getByLabel("WhatsApp", { exact: true });
+    this.emailInput = root.getByLabel("E-mail para o PIX", { exact: true });
     this.addressInput = root.getByLabel("Endereço", { exact: true });
     this.neighborhoodSelect = root.getByRole("combobox", { name: "Bairro" });
     this.notesInput = root.getByLabel("Observações do pedido", { exact: true });
     this.submitButton = root.getByRole("button", { name: "Registrar pedido e abrir WhatsApp" });
+    this.pixButton = root.getByRole("button", { name: /PIX agora/ });
     this.whatsappButton = root.getByRole("button", { name: "Abrir WhatsApp" });
     this.trackingLink = root.getByRole("link", { name: "Acompanhar pedido" });
   }
@@ -36,6 +40,10 @@ export class CartDrawer {
   async fillCustomer(name: string, phone: string): Promise<void> {
     await this.nameInput.fill(name);
     await this.phoneInput.fill(phone);
+  }
+
+  async fillPixEmail(email: string): Promise<void> {
+    await this.emailInput.fill(email);
   }
 
   async chooseDelivery(address: string, neighborhood: string): Promise<void> {

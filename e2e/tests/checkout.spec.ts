@@ -56,3 +56,21 @@ test("registra retirada sem exigir endereço", async ({ storefrontPage, orderApi
   expect(orderApi.requests).toHaveLength(1);
   expect(orderApi.requests[0]).toMatchObject({ fulfillmentType: "pickup", address: "", neighborhood: "" });
 });
+
+test("gera PIX opcional para entrega sem abrir o WhatsApp automaticamente", async ({ storefrontPage, orderApi }) => {
+  await storefrontPage.goto();
+  await storefrontPage.addProduct("Balde 500 g");
+  await storefrontPage.openCart();
+  await storefrontPage.cart.continueToCheckout();
+  await storefrontPage.cart.fillCustomer("Cliente PIX", "11977777777");
+  await storefrontPage.cart.chooseDelivery("Rua PIX, 247", "Centro");
+  await storefrontPage.cart.pixButton.click();
+  await storefrontPage.cart.fillPixEmail("comprador@testuser.com");
+
+  await storefrontPage.cart.root.getByRole("button", { name: "Registrar e gerar PIX" }).click();
+
+  await expect(storefrontPage.cart.heading).toHaveText("Recebemos seu pedido.");
+  await expect(storefrontPage.cart.root.getByText("Pague agora com PIX")).toBeVisible();
+  await expect(storefrontPage.cart.root.getByRole("button", { name: "Copiar código PIX" })).toBeVisible();
+  expect(orderApi.requests[0]).toMatchObject({ fulfillmentType: "delivery", paymentMethod: "pix", customerEmail: "comprador@testuser.com" });
+});

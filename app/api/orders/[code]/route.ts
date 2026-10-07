@@ -3,6 +3,7 @@ import { getDb } from "../../../../db";
 import { orderItems, orders } from "../../../../db/schema";
 import { takeMemoryRateLimit } from "../../../../lib/memory-rate-limit";
 import { getClientIp } from "../../../../lib/request-security";
+import { publicPayment } from "../../../../lib/order-payment";
 
 const digits = (value: string) => value.replace(/\D/g, "");
 
@@ -21,10 +22,10 @@ export async function GET(request: Request, context: { params: Promise<{ code: s
       const [matched] = await db.select().from(orders).where(eq(orders.id, candidates[0].id)).limit(1);
       if (!matched) return Response.json({ error: "Pedido não encontrado." }, { status: 404 });
       const items = await db.select().from(orderItems).where(eq(orderItems.orderId, matched.id));
-      return Response.json({ order: matched, items }, { headers: { "Cache-Control": "private, no-store" } });
+      return Response.json({ order: matched, items, payment: publicPayment(matched, phone) }, { headers: { "Cache-Control": "private, no-store" } });
     }
     const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
-    return Response.json({ order, items }, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ order, items, payment: publicPayment(order, phone) }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return Response.json({ error: "Não foi possível consultar o pedido." }, { status: 500 });
   }

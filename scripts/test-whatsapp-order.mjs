@@ -12,6 +12,8 @@ const order = {
   subtotalCents: 4999,
   deliveryFeeCents: 500,
   totalCents: 5499,
+  paymentMethod: "pay_on_fulfillment",
+  paymentStatus: "not_requested",
 };
 const items = [{ productName: "Balde 500 g", quantity: 1, unitPriceCents: 4999, optionsJson: JSON.stringify({ options: ["Barbecue"] }), itemNotes: "Pouco molho" }];
 

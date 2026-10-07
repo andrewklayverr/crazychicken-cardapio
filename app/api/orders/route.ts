@@ -5,6 +5,8 @@ import { getStoreAvailability, parseWeeklySchedule } from "../../../lib/store-ho
 import { buildWhatsappUrl } from "../../../lib/whatsapp-order";
 import { getClientIp, isTrustedRequestOrigin } from "../../../lib/request-security";
 import { takeMemoryRateLimit } from "../../../lib/memory-rate-limit";
+import { ensurePixCharge, publicPayment } from "../../../lib/order-payment";
+import { MercadoPagoError } from "../../../lib/mercado-pago";
 
 const MAX_ITEMS = 40;
 const text = (value: unknown, max = 240) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -34,7 +36,9 @@ export async function POST(request: Request) {
       idempotencyKey?: string;
       customerName?: string;
       customerPhone?: string;
+      customerEmail?: string;
       fulfillmentType?: "pickup" | "delivery";
+      paymentMethod?: "pix" | "pay_on_fulfillment";
       address?: string;
       neighborhood?: string;
       notes?: string;
@@ -43,13 +47,16 @@ export async function POST(request: Request) {
     const idempotencyKey = text(payload.idempotencyKey, 80);
     const customerName = text(payload.customerName, 80);
     const customerPhone = text(payload.customerPhone, 30);
+    const customerEmail = text(payload.customerEmail, 190).toLowerCase();
     const fulfillmentType = payload.fulfillmentType === "delivery" ? "delivery" : payload.fulfillmentType === "pickup" ? "pickup" : null;
+    const paymentMethod = payload.paymentMethod === "pix" ? "pix" : "pay_on_fulfillment";
     const address = text(payload.address, 240);
     const neighborhood = text(payload.neighborhood, 100);
     const notes = text(payload.notes, 300);
     const items = Array.isArray(payload.items) ? payload.items.slice(0, MAX_ITEMS) : [];
     if (!idempotencyKey || customerName.length < 2 || phoneDigits(customerPhone).length < 8 || !fulfillmentType || !items.length) return Response.json({ error: "Confira os dados do pedido." }, { status: 400 });
     if (fulfillmentType === "delivery" && !address) return Response.json({ error: "Informe o endereço de entrega." }, { status: 400 });
+    if (paymentMethod === "pix" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) return Response.json({ error: "Informe um e-mail válido para gerar o PIX." }, { status: 400 });
 
     const db = getDb();
     const settingsRows = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
@@ -57,8 +64,19 @@ export async function POST(request: Request) {
     if (!settings) return Response.json({ error: "Pedidos temporariamente indisponíveis." }, { status: 503 });
     const existing = await db.select().from(orders).where(eq(orders.idempotencyKey, idempotencyKey)).limit(1);
     if (existing[0]) {
-      const existingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, existing[0].id));
-      return Response.json({ order: existing[0], whatsappUrl: buildWhatsappUrl(existing[0], existingItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick"), duplicate: true });
+      let existingOrder = existing[0];
+      if (paymentMethod === "pay_on_fulfillment" && existingOrder.paymentMethod === "pix" && ["creating", "failed"].includes(existingOrder.paymentStatus)) {
+        await db.update(orders).set({ paymentMethod, paymentStatus: "not_requested", paymentUpdatedAt: new Date().toISOString().slice(0, 19).replace("T", " ") }).where(eq(orders.id, existingOrder.id));
+        [existingOrder] = await db.select().from(orders).where(eq(orders.id, existingOrder.id)).limit(1);
+      }
+      if (paymentMethod === "pix" && existingOrder.paymentMethod === "pix" && ["creating", "failed"].includes(existingOrder.paymentStatus) && customerEmail && customerEmail !== existingOrder.customerEmail) {
+        await db.update(orders).set({ customerEmail }).where(eq(orders.id, existingOrder.id));
+        [existingOrder] = await db.select().from(orders).where(eq(orders.id, existingOrder.id)).limit(1);
+      }
+      if (existingOrder.paymentMethod === "pix" && ["creating", "failed"].includes(existingOrder.paymentStatus)) existingOrder = await ensurePixCharge(existingOrder);
+      const existingItems = await db.select().from(orderItems).where(eq(orderItems.orderId, existingOrder.id));
+      const whatsappUrl = existingOrder.paymentMethod === "pix" && existingOrder.paymentStatus !== "paid" ? null : buildWhatsappUrl(existingOrder, existingItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick");
+      return Response.json({ order: existingOrder, payment: publicPayment(existingOrder, existingOrder.customerPhone), whatsappUrl, duplicate: true });
     }
     const availability = getStoreAvailability({ orderingMode: settings.orderingMode, weeklySchedule: parseWeeklySchedule(settings.weeklyScheduleJson) });
     if (!availability.isOpen) return Response.json({ error: availability.message }, { status: 409 });
@@ -89,13 +107,24 @@ export async function POST(request: Request) {
     const deliveryFeeCents = fulfillmentType === "delivery" ? (zone?.feeCents ?? settings?.defaultDeliveryFeeCents ?? 0) : 0;
     const totalCents = subtotalCents + deliveryFeeCents;
     const code = `CC-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
-    const result = await db.insert(orders).values({ code, status: "received", fulfillmentType, customerName, customerPhone, address: address || null, neighborhood: neighborhood || null, notes: notes || null, subtotalCents, deliveryFeeCents, totalCents, idempotencyKey });
+    const result = await db.insert(orders).values({ code, status: "received", fulfillmentType, customerName, customerPhone, customerEmail: customerEmail || null, address: address || null, neighborhood: neighborhood || null, notes: notes || null, subtotalCents, deliveryFeeCents, totalCents, paymentMethod, paymentStatus: paymentMethod === "pix" ? "creating" : "not_requested", idempotencyKey });
     const [saved] = await db.select().from(orders).where(eq(orders.id, Number(result[0].insertId))).limit(1);
     if (!saved) throw new Error("Não foi possível salvar o pedido.");
     await db.insert(orderItems).values(rows.map((row) => ({ orderId: saved.id, productId: row.product.id, productName: row.product.name, quantity: row.quantity, unitPriceCents: row.unitPriceCents, optionsJson: JSON.stringify({ options: row.selectedOptions.map((option) => option.label) }), itemNotes: row.itemNotes || null })));
     const savedItems = await db.select().from(orderItems).where(eq(orderItems.orderId, saved.id));
-    return Response.json({ order: saved, whatsappUrl: buildWhatsappUrl(saved, savedItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick") }, { status: 201 });
+    let completedOrder = saved;
+    if (paymentMethod === "pix") {
+      try {
+        completedOrder = await ensurePixCharge(saved);
+      } catch (error) {
+        const message = error instanceof MercadoPagoError ? error.message : "O pedido foi salvo, mas não foi possível gerar o PIX. Tente novamente ou escolha pagar ao receber.";
+        return Response.json({ error: message, order: saved }, { status: error instanceof MercadoPagoError ? error.status : 502 });
+      }
+    }
+    const whatsappUrl = completedOrder.paymentMethod === "pix" && completedOrder.paymentStatus !== "paid" ? null : buildWhatsappUrl(completedOrder, savedItems, settings?.whatsappNumber, settings?.whatsappTemplate as "complete" | "compact" | "quick");
+    return Response.json({ order: completedOrder, payment: publicPayment(completedOrder, customerPhone), whatsappUrl }, { status: 201 });
   } catch (error) {
+    if (error instanceof MercadoPagoError) return Response.json({ error: error.message }, { status: error.status });
     const message = error instanceof Error ? error.message : "Não foi possível registrar o pedido.";
     if (message.includes("opções") || message.includes("produto") || message.includes("bairro")) return Response.json({ error: message }, { status: 400 });
     return Response.json({ error: message.includes("no such table") ? "O catálogo ainda está sendo configurado. Tente novamente em instantes." : "Não foi possível registrar o pedido." }, { status: 500 });
