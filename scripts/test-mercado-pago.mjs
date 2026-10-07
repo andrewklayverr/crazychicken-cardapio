@@ -22,7 +22,7 @@ globalThis.fetch = async (url, init) => {
 };
 
 try {
-  const order = await createMercadoPagoOrder({ externalReference: "CC-TESTE", valueCents: 5499, payerEmail: "comprador@testuser.com", idempotencyKey: "idempotency-key-test" });
+  const order = await createMercadoPagoOrder({ externalReference: "CC-TESTE", valueCents: 5499, payerEmail: "comprador@testuser.com", payerFirstName: "APRO", idempotencyKey: "idempotency-key-test" });
   assert.equal(order.id, "ORD01HRYFWNYRE1MR1E60MW3X0T2P");
   assert.equal(captured.url, "https://api.mercadopago.com/v1/orders");
   assert.equal(captured.init.headers.Authorization, "Bearer APP_USR-token-de-teste-com-tamanho-suficiente");
@@ -30,6 +30,7 @@ try {
   const sent = JSON.parse(captured.init.body);
   assert.equal(sent.total_amount, "54.99");
   assert.equal(sent.payer.email, "comprador@testuser.com");
+  assert.equal(sent.payer.first_name, "APRO");
   assert.equal(sent.transactions.payments[0].expiration_time, "PT1800S");
   assert.equal(mapMercadoPagoStatus(order), "pending");
   assert.equal(mapMercadoPagoStatus({ status: "processed", status_detail: "accredited" }), "paid");

@@ -95,7 +95,7 @@ export function mercadoPagoIdempotencyKey(orderKey: string, orderCode: string) {
   return createHash("sha256").update(`crazy-chicken:${orderKey}:${orderCode}`, "utf8").digest("hex");
 }
 
-export async function createMercadoPagoOrder(input: { externalReference: string; valueCents: number; payerEmail: string; idempotencyKey: string }) {
+export async function createMercadoPagoOrder(input: { externalReference: string; valueCents: number; payerEmail: string; payerFirstName: string; idempotencyKey: string }) {
   const amount = centsToAmount(input.valueCents);
   const response = await mercadoPagoJson("/v1/orders", {
     method: "POST",
@@ -112,7 +112,7 @@ export async function createMercadoPagoOrder(input: { externalReference: string;
           expiration_time: `PT${mercadoPagoPixExpiresInSeconds()}S`,
         }],
       },
-      payer: { email: input.payerEmail },
+      payer: { email: input.payerEmail, first_name: input.payerFirstName.slice(0, 80) },
     }),
   });
   return validateMercadoPagoOrder(response, { orderId: response.id, externalReference: input.externalReference, valueCents: input.valueCents });

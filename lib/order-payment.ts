@@ -51,7 +51,7 @@ export async function ensurePixCharge(order: Order) {
   try {
     const providerOrder = order.mercadoPagoOrderId
       ? validateMercadoPagoOrder(await getMercadoPagoOrder(order.mercadoPagoOrderId), { orderId: order.mercadoPagoOrderId, externalReference: order.code, valueCents: order.totalCents })
-      : await createMercadoPagoOrder({ externalReference: order.code, valueCents: order.totalCents, payerEmail: order.customerEmail, idempotencyKey: mercadoPagoIdempotencyKey(order.idempotencyKey, order.code) });
+      : await createMercadoPagoOrder({ externalReference: order.code, valueCents: order.totalCents, payerEmail: order.customerEmail, payerFirstName: order.customerName, idempotencyKey: mercadoPagoIdempotencyKey(order.idempotencyKey, order.code) });
     await db.update(orders).set(chargePatch(providerOrder, order, !order.mercadoPagoOrderId)).where(eq(orders.id, order.id));
   } catch (error) {
     await db.update(orders).set({ paymentStatus: "failed", paymentUpdatedAt: mysqlTimestamp() }).where(eq(orders.id, order.id));
