@@ -71,6 +71,23 @@ test.describe("regressão visual da vitrine @visual", () => {
     await stabilize(page);
     await expect(storefrontPage.cart.root).toHaveScreenshot("cart.png");
   });
+
+  test("preserva as etapas de dados e pagamento do checkout", async ({ page, storefrontPage }) => {
+    await storefrontPage.goto();
+    await storefrontPage.addProduct("Balde 500 g");
+    await storefrontPage.openCart();
+    await storefrontPage.cart.continueToCheckout();
+    await storefrontPage.cart.fillCustomer("Cliente Responsivo", "11999999999");
+    await storefrontPage.cart.chooseDelivery("Rua Responsiva, 247", "Centro");
+    await stabilize(page);
+    await expect(storefrontPage.cart.root).toHaveScreenshot("checkout-dados.png");
+
+    await storefrontPage.cart.goToPayment();
+    await storefrontPage.cart.pixButton.click();
+    await storefrontPage.cart.fillPixEmail("cliente@exemplo.com");
+    await stabilize(page);
+    await expect(storefrontPage.cart.root).toHaveScreenshot("checkout-pagamento-pix.png");
+  });
 });
 
 test.describe("regressão visual do painel administrativo @visual", () => {

@@ -1,5 +1,19 @@
 import { expect, test } from "../fixtures/app.fixture";
 
+async function expectCheckoutInsideViewport(page: import("@playwright/test").Page): Promise<void> {
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  await expect.poll(async () => {
+    const drawer = await page.getByRole("dialog", { name: "Seu pedido" }).boundingBox();
+    const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    if (!drawer) return false;
+
+    return documentWidth <= viewport!.width
+      && drawer.x >= 0
+      && drawer.x + drawer.width <= viewport!.width + 1;
+  }).toBe(true);
+}
+
 test("mantém cardápio, menu e carrinho utilizáveis no mobile", async ({ storefrontPage }) => {
   await storefrontPage.goto();
 
@@ -23,4 +37,21 @@ test("abre a navegação mobile do painel admin", async ({ adminPage, adminApi }
   await expect(adminPage.navigation).toBeVisible();
   await adminPage.selectSection("Pedidos");
   await expect(adminPage.heading).toHaveText("Pedidos");
+});
+
+test("mantém as três etapas do checkout dentro da tela", async ({ page, storefrontPage }) => {
+  await storefrontPage.goto();
+  await storefrontPage.addProduct("Balde 500 g");
+  await storefrontPage.openCart();
+
+  await expectCheckoutInsideViewport(page);
+  await storefrontPage.cart.continueToCheckout();
+  await storefrontPage.cart.fillCustomer("Cliente Responsivo", "11999999999");
+  await storefrontPage.cart.chooseDelivery("Rua Responsiva, 247", "Centro");
+
+  await expectCheckoutInsideViewport(page);
+  await storefrontPage.cart.goToPayment();
+  await storefrontPage.cart.pixButton.click();
+  await expectCheckoutInsideViewport(page);
+  await expect(storefrontPage.cart.root).toBeVisible();
 });

@@ -30,13 +30,15 @@ export class StorefrontPage extends BasePage {
   }
 
   openCartButton(): Locator {
-    return this.page.getByRole("button", { name: /^Ver pedido/ });
+    return this.page.getByRole("button", { name: "Abrir carrinho" });
   }
 
   async addProduct(name: string): Promise<void> {
     await this.addProductButton(name).click();
     const productDialog = this.page.getByRole("dialog", { name });
-    await productDialog.getByRole("button", { name: /^Adicionar \d+ ·/ }).click();
+    if (await productDialog.isVisible({ timeout: 700 }).catch(() => false)) {
+      await productDialog.getByRole("button", { name: /^Adicionar \d+ ·/ }).click();
+    }
   }
 
   async openCart(): Promise<void> {

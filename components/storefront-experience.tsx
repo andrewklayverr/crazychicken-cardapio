@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ArrowRight, Check, ChevronRight, Clock3, Copy, Flame, MapPin, Menu, Minus, Plus, QrCode, Search, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Clock3, Copy, Flame, MapPin, Menu, Minus, Plus, QrCode, Search, ShoppingBag, X } from "lucide-react";
 import { BrandMark } from "./brand-mark";
 import { fallbackProducts, fallbackSettings, type CatalogProduct } from "../lib/catalog";
 import { getStoreAvailability, normalizeOrderingMode, type OrderingMode, type WeeklySchedule } from "../lib/store-hours";
@@ -82,7 +82,7 @@ function MobileMenu({ onClose, onOpenCart }: { onClose: () => void; onOpenCart: 
 }
 
 function CartDrawer({ cart, settings, zones, orderingOpen, availabilityMessage, onClose, onChangeQuantity, onRemove, onClear }: { cart: CartItem[]; settings: StoreSettings; zones: DeliveryZone[]; orderingOpen: boolean; availabilityMessage: string; onClose: () => void; onChangeQuantity: (lineId: string, delta: number) => void; onRemove: (lineId: string) => void; onClear: () => void }) {
-  const [step, setStep] = useState<"cart" | "checkout" | "success">("cart");
+  const [step, setStep] = useState<"cart" | "details" | "payment" | "success">("cart");
   const [fulfillmentType, setFulfillmentType] = useState<"pickup" | "delivery">(settings.pickupEnabled ? "pickup" : "delivery");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "pay_on_fulfillment">("pay_on_fulfillment");
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", neighborhood: "", notes: "" });
@@ -99,6 +99,7 @@ function CartDrawer({ cart, settings, zones, orderingOpen, availabilityMessage, 
   const selectedZone = zones.find((zone) => zone.name === form.neighborhood);
   const estimatedDelivery = fulfillmentType === "delivery" ? selectedZone?.feeCents ?? settings.defaultDeliveryFeeCents : 0;
   const estimatedTotal = subtotal + estimatedDelivery;
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
   const updateForm = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
@@ -146,7 +147,138 @@ function CartDrawer({ cart, settings, zones, orderingOpen, availabilityMessage, 
     catch { setError("Não foi possível copiar. Selecione o código PIX manualmente."); }
   };
 
-  return <div className="drawer-backdrop" onClick={onClose}><aside className="cart-drawer" role="dialog" aria-modal="true" aria-label="Seu pedido" onClick={(event) => event.stopPropagation()}><div className="drawer-header"><div><span className="eyebrow">{step === "checkout" ? "Finalizar pedido" : step === "success" ? "Pedido registrado" : "Seu pedido"}</span><h2>{step === "checkout" ? "Só falta isso." : step === "success" ? "Recebemos seu pedido." : cart.length ? "Tá ficando bom." : "Seu carrinho está vazio"}</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Fechar carrinho"><X size={21} /></button></div>{step === "success" ? <div className="order-success"><div className="success-icon"><Check size={30} /></div><p>Pedido <strong>{displayOrderCode(orderId, orderCode)}</strong> registrado com total confirmado de <strong>{money(serverTotal ?? 0)}</strong>.</p>{payment?.method === "pix" && <section className={`pix-payment pix-payment--${payment.status}`} aria-live="polite"><div className="pix-payment__heading"><QrCode size={22} /><div><strong>{payment.status === "paid" ? "PIX confirmado" : payment.status === "expired" ? "PIX expirado" : "Pague agora com PIX"}</strong><span>{payment.status === "paid" ? "Pagamento recebido. Já avisamos a loja." : payment.status === "expired" ? "Abra o link do Mercado Pago para verificar a cobrança." : "Escaneie o QR Code ou copie o código abaixo."}</span></div></div>{payment.status !== "paid" && <>{payment.qrCodeUrl && <img className="pix-payment__qr" src={payment.qrCodeUrl} alt="QR Code PIX deste pedido" />}{payment.brCode && <><label className="form-label">PIX copia e cola<textarea readOnly value={payment.brCode} rows={3} /></label><button type="button" className="pix-copy-button" onClick={copyPix}><Copy size={16} /> {copied ? "Código copiado" : "Copiar código PIX"}</button></>}{payment.paymentLinkUrl && <a className="secondary-button" href={payment.paymentLinkUrl} target="_blank" rel="noreferrer">Abrir pagamento seguro <ArrowRight size={16} /></a>}<small className="pix-payment__waiting"><span /> Aguardando confirmação do banco...</small></>}</section>}{whatsappUrl ? <><p className="admin-help">{payment?.method === "pix" ? "Pagamento confirmado. Agora você pode enviar o pedido para a loja pelo WhatsApp." : "Tentamos abrir o WhatsApp com a mensagem completa. Se ele não abriu, use o botão abaixo."}</p><button type="button" className="checkout-button" onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}>Abrir WhatsApp <ArrowRight size={17} /></button></> : <p className="form-error">O pedido foi salvo, mas o WhatsApp da loja ainda não está configurado no painel administrativo.</p>}<a className="secondary-button" href={`/pedido/${encodeURIComponent(orderCode)}?phone=${encodeURIComponent(form.phone)}`}>Acompanhar pedido <ArrowRight size={17} /></a><button type="button" className="secondary-button" onClick={() => { onClear(); onClose(); }}>Voltar ao cardápio</button></div> : step === "checkout" ? <form className="checkout-form" onSubmit={submitOrder}><div className="checkout-summary"><span>Resumo do pedido</span>{cart.map((item) => <div key={item.lineId}><b>{item.quantity}x {item.product.name}</b><small>{item.selectedOptions.map((option) => option.label).join(", ") || "Sem opções adicionais"}{item.itemNotes ? ` · ${item.itemNotes}` : ""}</small></div>)}</div><div className="fulfillment-toggle" role="group" aria-label="Forma de recebimento"><button type="button" className={fulfillmentType === "pickup" ? "active" : ""} onClick={() => setFulfillmentType("pickup")} disabled={!settings.pickupEnabled}>Retirar</button><button type="button" className={fulfillmentType === "delivery" ? "active" : ""} onClick={() => setFulfillmentType("delivery")} disabled={!settings.deliveryEnabled}>Entregar</button></div><label className="form-label">Nome<input required value={form.name} onChange={(event) => updateForm("name", event.target.value)} /></label><label className="form-label">WhatsApp<input required inputMode="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} placeholder="(11) 99999-9999" /></label>{paymentMethod === "pix" && <label className="form-label">E-mail para o PIX<input required type="email" autoComplete="email" value={form.email} onChange={(event) => updateForm("email", event.target.value)} placeholder="Use o e-mail da conta compradora no teste" /></label>}{fulfillmentType === "delivery" && <><label className="form-label">Endereço<input required value={form.address} onChange={(event) => updateForm("address", event.target.value)} /></label><label className="form-label">Bairro<select required={zones.length > 0} value={form.neighborhood} onChange={(event) => updateForm("neighborhood", event.target.value)}><option value="">Selecione seu bairro</option>{zones.map((zone) => <option key={zone.id} value={zone.name}>{zone.name} · {money(zone.feeCents)}</option>)}</select></label></>}{zones.length === 0 && fulfillmentType === "delivery" && <label className="form-label">Bairro<input value={form.neighborhood} onChange={(event) => updateForm("neighborhood", event.target.value)} /></label>}<fieldset className="payment-choice"><legend>Como quer pagar?</legend><button type="button" className={paymentMethod === "pix" ? "active" : ""} onClick={() => { setPaymentMethod("pix"); setError(""); }}><QrCode size={20} /><span><strong>PIX agora</strong><small>QR Code e copia e cola</small></span></button><button type="button" className={paymentMethod === "pay_on_fulfillment" ? "active" : ""} onClick={() => { setPaymentMethod("pay_on_fulfillment"); setError(""); }}><Clock3 size={20} /><span><strong>Pagar ao receber</strong><small>Na {fulfillmentType === "delivery" ? "entrega" : "retirada"}</small></span></button></fieldset><label className="form-label">Observações do pedido<textarea value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} maxLength={300} placeholder="Ex.: chamar no portão..." /></label>{error && <div className="form-error">{error}</div>}<div className="checkout-total"><span>Total estimado</span><strong>{money(estimatedTotal)}</strong></div><p className="privacy-note">Seus dados são usados somente para preparar e entregar este pedido.</p><button type="submit" className="checkout-button" disabled={!orderingOpen || submitting}>{submitting ? "Registrando..." : paymentMethod === "pix" ? "Registrar e gerar PIX" : "Registrar pedido e abrir WhatsApp"} {!submitting && <ArrowRight size={17} />}</button><button type="button" className="secondary-button" onClick={() => setStep("cart")}>Voltar ao carrinho</button></form> : cart.length ? <><div className="cart-list">{cart.map((item) => <div className="cart-item" key={item.lineId}><img src={item.product.image} alt="" loading="lazy" decoding="async" onError={(event) => recoverImage(event, "/hero-food.jpeg")} /><div className="cart-item__info"><strong>{item.product.name}</strong><span>{money(item.product.priceCents + item.selectedOptions.reduce((sum, option) => sum + option.priceDeltaCents, 0))}{item.selectedOptions.length ? ` · ${item.selectedOptions.map((option) => option.label).join(", ")}` : ""}</span>{item.itemNotes && <small>{item.itemNotes}</small>}<div className="quantity-control"><button type="button" onClick={() => onChangeQuantity(item.lineId, -1)} aria-label="Diminuir quantidade"><Minus size={13} /></button><b>{item.quantity}</b><button type="button" onClick={() => onChangeQuantity(item.lineId, 1)} aria-label="Aumentar quantidade"><Plus size={13} /></button></div></div><button type="button" className="remove-button" onClick={() => onRemove(item.lineId)} aria-label={`Remover ${item.product.name}`}><Trash2 size={16} /></button></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div><span>Entrega</span><span className="free-delivery">calculada no checkout</span></div><div className="cart-total"><span>Total estimado</span><strong>{money(subtotal)}</strong></div><button type="button" className="checkout-button" disabled={!orderingOpen} onClick={() => setStep("checkout")}>Continuar pedido <ArrowRight size={17} /></button><small>Você escolhe entrega, retirada e pagamento no próximo passo.</small></div></> : <div className="drawer-empty"><ShoppingBag size={36} /><p>Adicione seus favoritos e eles aparecem aqui.</p><button type="button" onClick={onClose}>Explorar cardápio</button></div>}</aside></div>;
+  const goToPayment = () => {
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (form.name.trim().length < 2) { setError("Informe seu nome."); return; }
+    if (phoneDigits.length < 8) { setError("Informe um WhatsApp válido."); return; }
+    if (fulfillmentType === "delivery" && !form.address.trim()) { setError("Informe o endereço de entrega."); return; }
+    if (fulfillmentType === "delivery" && zones.length > 0 && !form.neighborhood) { setError("Selecione o bairro de entrega."); return; }
+    setError("");
+    setStep("payment");
+  };
+
+  return (
+    <div className="drawer-backdrop checkout-backdrop" onClick={onClose}>
+      <aside className={`cart-drawer checkout-drawer checkout-drawer--${step}`} role="dialog" aria-modal="true" aria-label="Seu pedido" onClick={(event) => event.stopPropagation()}>
+        <header className="drawer-header checkout-drawer__header">
+          <div>
+            <span className="eyebrow">{step === "success" ? "Pedido registrado" : step === "cart" ? "Seu pedido" : "Finalizar pedido"}</span>
+            <h2>{step === "success" ? "Recebemos seu pedido." : step === "cart" ? (cart.length ? "Tá ficando bom." : "Seu carrinho está vazio") : step === "details" ? "Só falta isso." : paymentMethod === "pix" ? "Pagamento via PIX" : "Escolha o pagamento."}</h2>
+          </div>
+          <button type="button" className="checkout-close" onClick={onClose} aria-label="Fechar checkout"><X size={21} /></button>
+        </header>
+
+        {step !== "success" && (
+          <ol className="checkout-steps" aria-label="Etapas do pedido">
+            <li className={step === "cart" ? "active" : "complete"}><span>1</span> Carrinho</li>
+            <li className={step === "details" ? "active" : step === "payment" ? "complete" : ""}><span>2</span> Dados</li>
+            <li className={step === "payment" ? "active" : ""}><span>3</span> Pagamento</li>
+          </ol>
+        )}
+
+        <div className="checkout-drawer__content">
+          {step === "success" ? (
+            <div className="order-success">
+              <div className="success-icon"><Check size={30} /></div>
+              <p>Pedido <strong>{displayOrderCode(orderId, orderCode)}</strong> registrado com total confirmado de <strong>{money(serverTotal ?? 0)}</strong>.</p>
+              {payment?.method === "pix" && (
+                <section className={`pix-payment pix-payment--${payment.status}`} aria-live="polite">
+                  <div className="pix-payment__heading"><QrCode size={22} /><div><strong>{payment.status === "paid" ? "PIX confirmado" : payment.status === "expired" ? "PIX expirado" : "Pague agora com PIX"}</strong><span>{payment.status === "paid" ? "Pagamento recebido. Já avisamos a loja." : payment.status === "expired" ? "Abra o link do Mercado Pago para verificar a cobrança." : "Escaneie o QR Code ou copie o código abaixo."}</span></div></div>
+                  {payment.status !== "paid" && <>
+                    {payment.qrCodeUrl && <img className="pix-payment__qr" src={payment.qrCodeUrl} alt="QR Code PIX deste pedido" />}
+                    {payment.brCode && <><label className="form-label">PIX copia e cola<textarea readOnly value={payment.brCode} rows={3} /></label><button type="button" className="pix-copy-button" onClick={copyPix}><Copy size={16} /> {copied ? "Código copiado" : "Copiar código PIX"}</button></>}
+                    {payment.paymentLinkUrl && <a className="secondary-button" href={payment.paymentLinkUrl} target="_blank" rel="noreferrer">Abrir pagamento seguro <ArrowRight size={16} /></a>}
+                    <small className="pix-payment__waiting"><span /> Aguardando confirmação do banco...</small>
+                  </>}
+                </section>
+              )}
+              {whatsappUrl ? <><p className="admin-help">{payment?.method === "pix" ? "Pagamento confirmado. Agora você pode enviar o pedido para a loja pelo WhatsApp." : "Tentamos abrir o WhatsApp com a mensagem completa. Se ele não abriu, use o botão abaixo."}</p><button type="button" className="checkout-button" onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}>Abrir WhatsApp <ArrowRight size={17} /></button></> : payment?.method === "pix" && payment.status !== "paid" ? <p className="checkout-info">O WhatsApp será liberado após a confirmação do PIX.</p> : <p className="form-error">O pedido foi salvo, mas o WhatsApp da loja ainda não está configurado no painel administrativo.</p>}
+              <a className="secondary-button" href={`/pedido/${encodeURIComponent(orderCode)}?phone=${encodeURIComponent(form.phone)}`}>Acompanhar pedido <ArrowRight size={17} /></a>
+              <button type="button" className="secondary-button" onClick={() => { onClear(); onClose(); }}>Voltar ao cardápio</button>
+            </div>
+          ) : step === "cart" ? (
+            cart.length ? <section className="checkout-panel checkout-panel--cart">
+              <div className="checkout-cart-list">
+                {cart.map((item) => {
+                  const unitPrice = item.product.priceCents + item.selectedOptions.reduce((sum, option) => sum + option.priceDeltaCents, 0);
+                  return <article className="checkout-cart-item" key={item.lineId}>
+                    <img src={item.product.image} alt="" loading="lazy" decoding="async" onError={(event) => recoverImage(event, "/hero-food.jpeg")} />
+                    <div className="checkout-cart-item__copy">
+                      <strong>{item.product.name}</strong>
+                      <b>{money(unitPrice * item.quantity)}</b>
+                      <small>{item.selectedOptions.map((option) => option.label).join(", ") || "Sem opções adicionais"}{item.itemNotes ? ` · ${item.itemNotes}` : ""}</small>
+                      <div className="quantity-control"><button type="button" onClick={() => onChangeQuantity(item.lineId, -1)} aria-label="Diminuir quantidade"><Minus size={13} /></button><b>{item.quantity}</b><button type="button" onClick={() => onChangeQuantity(item.lineId, 1)} aria-label="Aumentar quantidade"><Plus size={13} /></button></div>
+                    </div>
+                    <button type="button" className="checkout-cart-item__remove" onClick={() => onRemove(item.lineId)} aria-label={`Remover ${item.product.name}`}><X size={15} /></button>
+                  </article>;
+                })}
+              </div>
+              <footer className="checkout-footer">
+                <div className="checkout-totals">
+                  <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+                  <div><span>Entrega</span><em>Calculada no endereço</em></div>
+                  <div className="checkout-totals__total"><span>Total estimado</span><strong>{money(subtotal)}</strong></div>
+                </div>
+                <button type="button" className="checkout-button" disabled={!orderingOpen} onClick={() => { setError(""); setStep("details"); }}>Continuar pedido</button>
+                <small>Entrega, retirada e pagamento no próximo passo.</small>
+              </footer>
+            </section> : <div className="drawer-empty"><ShoppingBag size={36} /><p>Adicione seus favoritos e eles aparecem aqui.</p><button type="button" onClick={onClose}>Explorar cardápio</button></div>
+          ) : step === "details" ? (
+            <form key="details" className="checkout-form checkout-panel" onSubmit={(event) => { event.preventDefault(); goToPayment(); }}>
+              <div className="checkout-order-preview">
+                <span>{cartCount} {cartCount === 1 ? "item no carrinho" : "itens no carrinho"}</span>
+                <strong>{money(subtotal)}</strong>
+              </div>
+              <div className="fulfillment-toggle" role="group" aria-label="Forma de recebimento">
+                <button type="button" className={fulfillmentType === "pickup" ? "active" : ""} onClick={() => setFulfillmentType("pickup")} disabled={!settings.pickupEnabled}>Retirar</button>
+                <button type="button" className={fulfillmentType === "delivery" ? "active" : ""} onClick={() => setFulfillmentType("delivery")} disabled={!settings.deliveryEnabled}>Entregar</button>
+              </div>
+              <label className="form-label">Nome<input required autoComplete="name" value={form.name} onChange={(event) => updateForm("name", event.target.value)} placeholder="Seu nome" /></label>
+              <label className="form-label">WhatsApp<input required inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} placeholder="(11) 99999-9999" /></label>
+              {fulfillmentType === "delivery" && <label className="form-label">Endereço<input required autoComplete="street-address" value={form.address} onChange={(event) => updateForm("address", event.target.value)} placeholder="Rua, número e complemento" /></label>}
+              {fulfillmentType === "delivery" && zones.length > 0 && <label className="form-label">Bairro<select required value={form.neighborhood} onChange={(event) => updateForm("neighborhood", event.target.value)}><option value="">Selecione seu bairro</option>{zones.map((zone) => <option key={zone.id} value={zone.name}>{zone.name} · {money(zone.feeCents)}</option>)}</select></label>}
+              {fulfillmentType === "delivery" && zones.length === 0 && <label className="form-label">Bairro<input value={form.neighborhood} onChange={(event) => updateForm("neighborhood", event.target.value)} placeholder="Seu bairro" /></label>}
+              <label className="form-label">Observações<textarea value={form.notes} onChange={(event) => updateForm("notes", event.target.value)} maxLength={300} rows={2} placeholder="Ex.: chamar no portão..." /></label>
+              {error && <div className="form-error" role="alert">{error}</div>}
+              <footer className="checkout-form__actions">
+                <button type="submit" className="checkout-button">Ir para pagamento</button>
+                <button type="button" className="checkout-back-button" onClick={() => { setError(""); setStep("cart"); }}>Voltar ao carrinho</button>
+              </footer>
+            </form>
+          ) : (
+            <form key="payment" className="checkout-form checkout-panel checkout-panel--payment" onSubmit={submitOrder}>
+              <div className="checkout-summary">
+                {cart.map((item) => <div key={item.lineId}><span><b>{item.quantity}x {item.product.name}</b><small>{item.selectedOptions.map((option) => option.label).join(", ") || "Sem opções adicionais"}</small></span><strong>{money((item.product.priceCents + item.selectedOptions.reduce((sum, option) => sum + option.priceDeltaCents, 0)) * item.quantity)}</strong></div>)}
+              </div>
+              <fieldset className="payment-choice payment-choice--stacked">
+                <legend>Escolha o pagamento</legend>
+                <button type="button" className={paymentMethod === "pix" ? "active" : ""} onClick={() => { setPaymentMethod("pix"); setError(""); }}><span className="payment-choice__icon"><QrCode size={18} /></span><span><strong>PIX agora</strong><small>QR Code e copia e cola</small></span><span className="payment-choice__radio">{paymentMethod === "pix" ? <Check size={12} /> : null}</span></button>
+                <button type="button" className="payment-choice__future" disabled aria-disabled="true"><span className="payment-choice__icon">▣</span><span><strong>Cartão de crédito</strong><small>Em breve no pagamento online</small></span><span className="payment-choice__tag">Em breve</span></button>
+                <button type="button" className={paymentMethod === "pay_on_fulfillment" ? "active" : ""} onClick={() => { setPaymentMethod("pay_on_fulfillment"); setError(""); }}><span className="payment-choice__icon"><Clock3 size={18} /></span><span><strong>Ao receber</strong><small>Dinheiro ou maquininha</small></span><span className="payment-choice__radio">{paymentMethod === "pay_on_fulfillment" ? <Check size={12} /> : null}</span></button>
+              </fieldset>
+
+              {paymentMethod === "pix" ? <section className="checkout-payment-preview checkout-payment-preview--pix">
+                <div className="checkout-payment-preview__qr" aria-hidden="true">PIX</div>
+                <div><strong>Escaneie para pagar</strong><p>Após a confirmação do banco, o pedido é liberado e o WhatsApp fica disponível.</p></div>
+                <label className="form-label">E-mail para gerar o PIX<input required type="email" autoComplete="email" value={form.email} onChange={(event) => updateForm("email", event.target.value)} placeholder="seuemail@exemplo.com" /></label>
+              </section> : <section className="checkout-payment-preview"><Clock3 size={22} /><div><strong>Pagamento na entrega ou retirada</strong><p>Combine dinheiro ou maquininha diretamente com a loja.</p></div></section>}
+
+              {error && <div className="form-error" role="alert">{error}</div>}
+              <footer className="checkout-footer checkout-footer--payment">
+                <div className="checkout-totals">
+                  <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+                  <div><span>Entrega</span><em>{fulfillmentType === "pickup" ? "Grátis na retirada" : selectedZone ? money(estimatedDelivery) : "Calculada no endereço"}</em></div>
+                  <div className="checkout-totals__total"><span>Total estimado</span><strong>{money(estimatedTotal)}</strong></div>
+                </div>
+                <button type="submit" className="checkout-button" disabled={!orderingOpen || submitting}>{submitting ? "Registrando..." : paymentMethod === "pix" ? "Confirmar pedido e gerar PIX" : "Confirmar pedido"} {!submitting && <ArrowRight size={16} />}</button>
+                <button type="button" className="checkout-back-button" onClick={() => { setError(""); setStep("details"); }}>Voltar aos dados</button>
+              </footer>
+            </form>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
 }
 
 export function StorefrontExperience({ initialData }: { initialData: InitialStorefrontData }) {
