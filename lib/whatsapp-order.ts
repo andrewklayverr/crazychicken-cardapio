@@ -1,4 +1,5 @@
 import type { orderItems, orders } from "../db/schema";
+import { displayOrderCode } from "./order-code.ts";
 
 export type WhatsAppTemplate = "complete" | "compact" | "quick";
 
@@ -16,7 +17,7 @@ export function normalizeWhatsAppTemplate(value: unknown): WhatsAppTemplate {
   return isWhatsAppTemplate(value) ? value : "complete";
 }
 
-type OrderForMessage = Pick<typeof orders.$inferSelect, "code" | "fulfillmentType" | "customerName" | "customerPhone" | "address" | "neighborhood" | "notes" | "subtotalCents" | "deliveryFeeCents" | "totalCents" | "paymentMethod" | "paymentStatus">;
+type OrderForMessage = Pick<typeof orders.$inferSelect, "id" | "code" | "fulfillmentType" | "customerName" | "customerPhone" | "address" | "neighborhood" | "notes" | "subtotalCents" | "deliveryFeeCents" | "totalCents" | "paymentMethod" | "paymentStatus">;
 type ItemForMessage = Pick<typeof orderItems.$inferSelect, "productName" | "quantity" | "unitPriceCents" | "optionsJson" | "itemNotes">;
 
 function money(cents: number) {
@@ -58,12 +59,13 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
   const selectedTemplate = normalizeWhatsAppTemplate(template);
   const lines = itemLines(items);
   const itemsBlock = ["*Itens:*", ...lines];
+  const visibleCode = displayOrderCode(order.id, order.code);
 
   if (selectedTemplate === "quick") {
     return [
       "Olá! Quero confirmar meu pedido na Crazy Chicken.",
       "",
-      `*Pedido:* ${order.code}`,
+      `*Pedido:* ${visibleCode}`,
       ...lines,
       "",
       `*Total:* ${money(order.totalCents)}`,
@@ -78,7 +80,7 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
     return [
       "Olá! Quero confirmar meu pedido na Crazy Chicken.",
       "",
-      `*Pedido:* ${order.code}`,
+      `*Pedido:* ${visibleCode}`,
       ...itemsBlock,
       "",
       `*Cliente:* ${order.customerName}`,
@@ -92,7 +94,7 @@ export function buildWhatsappMessage(order: OrderForMessage, items: ItemForMessa
   return [
     "Olá! Quero confirmar meu pedido na Crazy Chicken.",
     "",
-    `*Pedido:* ${order.code}`,
+    `*Pedido:* ${visibleCode}`,
     ...itemsBlock,
     "",
     "*Dados do cliente:*",
