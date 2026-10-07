@@ -25,7 +25,10 @@ export async function GET(request: Request, context: { params: Promise<{ code: s
     }
     let syncUnavailable = false;
     if (order.paymentMethod === "pix" && order.paymentStatus !== "paid") {
-      try { order = await syncPixCharge(order); } catch { syncUnavailable = true; }
+      try { order = await syncPixCharge(order); } catch (error) {
+        syncUnavailable = true;
+        console.warn("[pix] status-poll-error", { orderCode: order.code, error: error instanceof Error ? error.message : "unknown-error" });
+      }
     }
     const [settings] = await db.select().from(storeSettings).where(eq(storeSettings.id, 1)).limit(1);
     const items = order.paymentStatus === "paid" ? await db.select().from(orderItems).where(eq(orderItems.orderId, order.id)) : [];

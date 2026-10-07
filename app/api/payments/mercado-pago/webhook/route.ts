@@ -33,6 +33,8 @@ export async function POST(request: Request) {
   if (!bodyDataId || bodyDataId.toLowerCase() !== dataId.toLowerCase()) return Response.json({ error: "Cobrança inválida." }, { status: 400 });
   if (!["order", "orders"].includes(String(payload.type).toLowerCase())) return new Response(null, { status: 204 });
 
+  console.info("[pix] webhook-received", { mercadoPagoOrderId: dataId, type: payload.type ?? null, action: payload.action ?? null });
+
   const providerOrder = await getMercadoPagoOrder(dataId);
   if (!providerOrder.id || providerOrder.id.toLowerCase() !== dataId.toLowerCase()) return Response.json({ error: "Cobrança inválida." }, { status: 409 });
 
@@ -41,7 +43,10 @@ export async function POST(request: Request) {
   if (!order && providerOrder.external_reference && /^CC-[A-Z0-9-]+$/.test(providerOrder.external_reference)) {
     [order] = await db.select().from(orders).where(eq(orders.code, providerOrder.external_reference)).limit(1);
   }
-  if (!order) return Response.json({ ok: true });
+  if (!order) {
+    console.warn("[pix] webhook-order-not-found", { mercadoPagoOrderId: providerOrder.id, externalReference: providerOrder.external_reference ?? null });
+    return Response.json({ ok: true });
+  }
 
   await applyMercadoPagoOrder(order, providerOrder);
   return Response.json({ ok: true });

@@ -24,6 +24,19 @@ function safeQrCodeBase64(value: string | undefined) {
   return value;
 }
 
+function logPixStatus(event: string, order: Order, providerOrder?: MercadoPagoOrder) {
+  const payment = providerOrder ? mercadoPagoPayment(providerOrder) : undefined;
+  const status = providerOrder ? mapMercadoPagoStatus(providerOrder) : order.paymentStatus;
+  console.info(`[pix] ${event}`, {
+    orderCode: order.code,
+    mercadoPagoOrderId: providerOrder?.id ?? order.mercadoPagoOrderId ?? null,
+    paymentStatus: status,
+    approved: status === "paid",
+    providerStatus: payment?.status ?? providerOrder?.status ?? null,
+    providerStatusDetail: payment?.status_detail ?? providerOrder?.status_detail ?? null,
+  });
+}
+
 function chargePatch(providerOrder: MercadoPagoOrder, order: Order, created = false) {
   const payment = mercadoPagoPayment(providerOrder);
   const status = mapMercadoPagoStatus(providerOrder);
@@ -53,8 +66,10 @@ export async function ensurePixCharge(order: Order) {
       ? validateMercadoPagoOrder(await getMercadoPagoOrder(order.mercadoPagoOrderId), { orderId: order.mercadoPagoOrderId, externalReference: order.code, valueCents: order.totalCents })
       : await createMercadoPagoOrder({ externalReference: order.code, valueCents: order.totalCents, payerEmail: order.customerEmail, payerFirstName: order.customerName, idempotencyKey: mercadoPagoIdempotencyKey(order.idempotencyKey, order.code) });
     await db.update(orders).set(chargePatch(providerOrder, order, !order.mercadoPagoOrderId)).where(eq(orders.id, order.id));
+    logPixStatus("charge-updated", order, providerOrder);
   } catch (error) {
     await db.update(orders).set({ paymentStatus: "failed", paymentUpdatedAt: mysqlTimestamp() }).where(eq(orders.id, order.id));
+    console.error("[pix] charge-error", { orderCode: order.code, error: error instanceof Error ? error.message : "unknown-error" });
     throw error;
   }
   const [updated] = await db.select().from(orders).where(eq(orders.id, order.id)).limit(1);
@@ -65,6 +80,7 @@ export async function syncPixCharge(order: Order) {
   if (order.paymentMethod !== "pix" || !order.mercadoPagoOrderId || order.paymentStatus === "paid") return order;
   const providerOrder = validateMercadoPagoOrder(await getMercadoPagoOrder(order.mercadoPagoOrderId), { orderId: order.mercadoPagoOrderId, externalReference: order.code, valueCents: order.totalCents });
   await getDb().update(orders).set(chargePatch(providerOrder, order)).where(eq(orders.id, order.id));
+  logPixStatus("status-polled", order, providerOrder);
   const [updated] = await getDb().select().from(orders).where(eq(orders.id, order.id)).limit(1);
   return updated ?? order;
 }
@@ -85,6 +101,7 @@ export function publicPayment(order: Order, phone: string) {
 export async function applyMercadoPagoOrder(order: Order, providerOrder: MercadoPagoOrder) {
   const verified = validateMercadoPagoOrder(providerOrder, { orderId: order.mercadoPagoOrderId ?? providerOrder.id, externalReference: order.code, valueCents: order.totalCents });
   await getDb().update(orders).set(chargePatch(verified, order)).where(eq(orders.id, order.id));
+  logPixStatus("webhook-status-applied", order, verified);
   const [updated] = await getDb().select().from(orders).where(eq(orders.id, order.id)).limit(1);
   return updated ?? order;
 }
