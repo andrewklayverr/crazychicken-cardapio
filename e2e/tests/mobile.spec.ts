@@ -22,7 +22,7 @@ test("mantém cardápio, menu e carrinho utilizáveis no mobile", async ({ store
   await expect(storefrontPage.mobileMenu.getByRole("link", { name: "Cardápio" })).toBeVisible();
   await storefrontPage.mobileMenu.getByRole("button", { name: "Meu pedido" }).click();
   await expect(storefrontPage.cart.heading).toHaveText("Seu carrinho está vazio");
-  await storefrontPage.cart.root.getByRole("button", { name: "Fechar carrinho" }).click();
+  await storefrontPage.cart.close();
 
   await storefrontPage.addProduct("Balde 500 g");
   await storefrontPage.openCart();

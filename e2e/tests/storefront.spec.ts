@@ -19,8 +19,8 @@ test.describe("cardápio e disponibilidade", () => {
       await storefrontPage.goto();
 
       await expect(storefrontPage.closedBanner).toBeVisible();
-      await expect(storefrontPage.addProductButton("Balde 500 g")).toBeDisabled();
-      await expect(storefrontPage.openCartButton()).toBeHidden();
+      await expect(storefrontPage.closedProductButton("Balde 500 g")).toBeDisabled();
+      await expect(storefrontPage.openCartButton()).toBeVisible();
     });
   });
 });

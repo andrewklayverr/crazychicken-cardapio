@@ -9,7 +9,7 @@ require.extensions['.ts'] = (mod, filename) => mod._compile(ts.transpileModule(f
 const { recoverOwner, recoveryConfig, recoveryOrigin, takeAdminAttempt } = require('../lib/admin-recovery.ts');
 const { hashPassword, verifyPassword, hashToken } = require('../lib/admin-security.ts');
 const email = 'owner@example.com';
-const password = 'new-password-for-test-only';
+const password = 'new-password-2026-for-test-only!';
 function config() { return { ADMIN_RECOVERY_EMAIL: email, ADMIN_RECOVERY_CODE: randomBytes(32).toString('base64url'), ADMIN_RECOVERY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString() }; }
 function body(env) { return { email, code: env.ADMIN_RECOVERY_CODE, password, confirmPassword: password }; }
 

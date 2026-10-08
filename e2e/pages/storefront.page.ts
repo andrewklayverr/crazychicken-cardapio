@@ -26,7 +26,11 @@ export class StorefrontPage extends BasePage {
   }
 
   addProductButton(name: string): Locator {
-    return this.page.getByRole("button", { name: `Adicionar ${name}` });
+    return this.page.getByRole("button", { name: `Adicionar ${name} ao pedido` });
+  }
+
+  closedProductButton(name: string): Locator {
+    return this.page.getByRole("button", { name: `Loja fechada; ${name} indisponível para pedido` });
   }
 
   openCartButton(): Locator {

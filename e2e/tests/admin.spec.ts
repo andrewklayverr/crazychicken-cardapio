@@ -12,7 +12,7 @@ test("carrega o painel e navega pelas áreas operacionais", async ({ adminPage, 
   await adminPage.goto();
 
   await expect(adminPage.heading).toHaveText(/Bom dia|Boa noite/);
-  await expect(page.getByText("CC-E2E-ADMIN")).toBeVisible();
+  await expect(page.getByText("Proprietário E2E", { exact: true })).toBeVisible();
 
   await test.step("pedidos", async () => {
     await adminPage.selectSection("Pedidos");

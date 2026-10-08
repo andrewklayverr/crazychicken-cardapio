@@ -1,6 +1,9 @@
 name: E2E Playwright
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -31,8 +34,22 @@ jobs:
       - name: Lint project and E2E suite
         run: npm run lint
 
+      - name: Run business and security checks
+        run: |
+          npm run test:store
+          npm run test:security
+          npm run test:whatsapp
+          npm run test:mercado-pago
+          npm run test:node
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
       - name: Run E2E suite
         run: npm run test:e2e
+
+      - name: Build production application
+        run: npm run build
 
       - name: Upload Playwright report
         if: failure()
@@ -53,6 +70,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
         run: npm ci

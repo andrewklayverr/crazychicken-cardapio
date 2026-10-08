@@ -2,6 +2,7 @@ import type { Locator } from "@playwright/test";
 
 export class CartDrawer {
   readonly heading: Locator;
+  readonly closeButton: Locator;
   readonly continueButton: Locator;
   readonly paymentButton: Locator;
   readonly pickupButton: Locator;
@@ -19,6 +20,7 @@ export class CartDrawer {
 
   constructor(readonly root: Locator) {
     this.heading = root.getByRole("heading", { level: 2 });
+    this.closeButton = root.getByRole("button", { name: "Fechar checkout" });
     this.continueButton = root.getByRole("button", { name: "Continuar pedido" });
     this.paymentButton = root.getByRole("button", { name: "Ir para pagamento" });
     this.pickupButton = root.getByRole("button", { name: "Retirar" });
@@ -37,6 +39,10 @@ export class CartDrawer {
 
   async continueToCheckout(): Promise<void> {
     await this.continueButton.click();
+  }
+
+  async close(): Promise<void> {
+    await this.closeButton.click();
   }
 
   async fillCustomer(name: string, phone: string): Promise<void> {

@@ -100,7 +100,7 @@ test.describe("regressão visual do painel administrativo @visual", () => {
     await adminPage.goto();
 
     await expect(adminPage.heading).toHaveText("Bom dia, Proprietário E2E.");
-    await expect(page.getByText("CC-E2E-ADMIN")).toBeVisible();
+    await expect(page.getByText("Proprietário E2E", { exact: true })).toBeVisible();
     await waitForImages(page.locator(".admin-shell"));
     await stabilize(page);
     await expect(page).toHaveScreenshot("admin-dashboard.png", { fullPage: true });
