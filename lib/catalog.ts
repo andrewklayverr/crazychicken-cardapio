@@ -54,6 +54,7 @@ export const fallbackSettings = {
     heroMobileImageKey: null as string | null,
     drinkBannerImageKey: "/drinks-menu.jpeg",
     drinkBannerImageKeys: [] as string[],
+    storefrontImageKey: null as string | null,
     heroTitle: "Hoje é dia de frango!",
     heroDescription: "Seu balde favorito, crocante e quentinho, está a um clique.",
     accent: "#ffc21b",

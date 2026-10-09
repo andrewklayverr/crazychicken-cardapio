@@ -899,3 +899,68 @@ input,textarea,select,button { max-width:100%; box-sizing:border-box; }
   .payment-choice--stacked button { grid-template-columns:32px minmax(0,1fr) auto; padding-inline:8px; }
   .payment-choice__tag { display:none; }
 }
+
+/* Navegação do catálogo, acompanhamento visível e novos destaques da loja. */
+.store-nav button.store-nav__link { border:0; background:transparent; font:inherit; cursor:pointer; }
+.tracking-header-link { min-height:42px; display:inline-flex; align-items:center; gap:7px; border:1px solid var(--store-line,var(--line)); border-radius:10px; padding:10px 12px; color:var(--store-text,var(--ink)); font-size:13px; font-weight:800; text-decoration:none; white-space:nowrap; }
+.tracking-header-link:hover,.tracking-header-link:focus-visible { border-color:var(--store-primary,var(--red)); color:var(--store-primary,var(--red)); outline:none; }
+.tracking-header-link__compact { display:none; }
+
+.drink-spotlight { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.drink-spotlight__copy>button { display:none; }
+
+.order-callout--with-image { height:270px; min-height:270px; display:grid; grid-template-columns:minmax(0,1fr) minmax(360px,.78fr); grid-template-rows:minmax(0,1fr); align-items:stretch; overflow:hidden; padding:0; }
+.order-callout--with-image .order-callout__copy { display:flex; flex-direction:column; justify-content:center; padding:40px 48px; }
+.order-callout__media { min-width:0; min-height:0; position:relative; overflow:hidden; }
+.order-callout__media>img { width:100%; height:100%; display:block; object-fit:cover; object-position:center; }
+.order-callout__media:after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,var(--store-primary,var(--red)) 0%,transparent 32%,#0002 100%); pointer-events:none; }
+.order-callout__media .order-callout__detail { position:absolute; z-index:2; right:24px; bottom:24px; max-width:calc(100% - 48px); background:#16100c9c; border-color:#ffffff8a; backdrop-filter:blur(7px); }
+.order-callout__media.is-hidden { display:none; }
+.order-callout--with-image:has(.order-callout__media.is-hidden) { grid-template-columns:1fr; }
+
+.appearance-storefront-upload { display:grid; grid-template-columns:minmax(180px,1fr) minmax(220px,1fr); gap:14px; align-items:stretch; }
+.appearance-storefront-upload>img,.appearance-storefront-upload__empty { width:100%; min-height:170px; aspect-ratio:12/7; border:1px solid var(--line); border-radius:10px; background:#f3e8d6; }
+.appearance-storefront-upload>img { display:block; object-fit:cover; }
+.appearance-storefront-upload__empty { display:grid; place-content:center; justify-items:center; gap:8px; color:var(--muted); font-size:11px; font-weight:800; text-align:center; }
+.appearance-storefront-upload>div:last-child { min-width:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:9px; }
+.appearance-storefront-upload>div:last-child>strong { color:var(--ink); font-size:13px; }
+.appearance-storefront-upload>div:last-child>small { color:var(--muted); font-size:10px; line-height:1.45; }
+.appearance-storefront-upload .secondary-button { width:100%; justify-content:center; }
+
+.tracking-form--lookup { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; }
+
+@media (max-width:760px) {
+  .store-header__actions { gap:6px; }
+  .tracking-header-link { min-height:40px; justify-content:center; gap:5px; padding:8px 9px; font-size:11px; }
+  .tracking-header-link__full { display:none; }
+  .tracking-header-link__compact { display:inline; }
+
+  .drink-spotlight { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:1fr 1fr; aspect-ratio:1/1; }
+  .drink-spotlight__image { width:100%; height:100%; aspect-ratio:auto; box-shadow:0 10px 28px #0006; }
+  .drink-spotlight__copy { min-height:0; justify-content:center; padding:10px 14px 12px; }
+  .drink-spotlight__topline { align-items:center; gap:7px; }
+  .drink-spotlight__topline .eyebrow { font-size:9px; letter-spacing:.1em; }
+  .drink-spotlight__copy h2 { margin:5px 0 4px; font-size:24px; line-height:.84; }
+  .drink-spotlight__copy p { margin:0 0 5px; font-size:10px; line-height:1.3; }
+  .drink-flavors { gap:4px; margin:0; }
+  .drink-flavors span { padding:3px 6px; font-size:8px; }
+  .drink-price { min-width:70px; padding:5px 6px; }
+  .drink-price small { font-size:6px; }
+  .drink-price strong { font-size:19px; }
+  .drink-price sup { font-size:8px; }
+
+  .order-callout--with-image { height:auto; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto 220px; padding:0; }
+  .order-callout--with-image .order-callout__copy { padding:27px 24px; }
+  .order-callout__media { height:220px; min-height:220px; }
+  .order-callout__media:after { background:linear-gradient(180deg,var(--store-primary,var(--red)) 0%,transparent 24%,#0003 100%); }
+  .order-callout__media .order-callout__detail { right:16px; bottom:16px; max-width:calc(100% - 32px); }
+
+  .appearance-storefront-upload { grid-template-columns:minmax(0,1fr); }
+  .appearance-storefront-upload>img,.appearance-storefront-upload__empty { min-height:0; }
+  .tracking-form--lookup { grid-template-columns:minmax(0,1fr); }
+}
+
+@media (max-width:350px) {
+  .drink-spotlight { aspect-ratio:auto; grid-template-rows:145px auto; }
+  .store-header .brand-mark__copy { display:none; }
+}

@@ -14,12 +14,17 @@ async function expectCheckoutInsideViewport(page: import("@playwright/test").Pag
   }).toBe(true);
 }
 
-test("mantém cardápio, menu e carrinho utilizáveis no mobile", async ({ storefrontPage }) => {
+test("mantém cardápio, menu e carrinho utilizáveis no mobile", async ({ page, storefrontPage }) => {
   await storefrontPage.goto();
+
+  const trackingButton = page.getByRole("banner").getByRole("link", { name: "Acompanhar pedido" });
+  await expect(trackingButton).toBeVisible();
+  await expect(trackingButton.getByText("Pedidos")).toBeVisible();
 
   await storefrontPage.openMobileMenuButton.click();
   await expect(storefrontPage.mobileMenu).toBeVisible();
-  await expect(storefrontPage.mobileMenu.getByRole("link", { name: "Cardápio" })).toBeVisible();
+  await expect(storefrontPage.mobileMenu.getByRole("button", { name: "Cardápio" })).toBeVisible();
+  await expect(storefrontPage.mobileMenu.getByRole("link", { name: "Acompanhar pedido" })).toBeVisible();
   await storefrontPage.mobileMenu.getByRole("button", { name: "Meu pedido" }).click();
   await expect(storefrontPage.cart.heading).toHaveText("Seu carrinho está vazio");
   await storefrontPage.cart.close();
