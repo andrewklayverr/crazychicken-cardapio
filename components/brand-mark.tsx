@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { mediaSrcSet, mediaVariantUrl } from "../lib/media-images";
 
 type BrandMarkProps = {
   compact?: boolean;
@@ -28,5 +29,6 @@ export function BrandMark({ compact = false, logoKey }: BrandMarkProps) {
     return () => { active = false; };
   }, [logoKey]);
 
-  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}><img className="brand-mark__image" src={resolveLogo(logoKey === undefined ? remoteLogoKey : logoKey)} alt="Crazy Chicken" width={42} height={42} loading={compact ? "lazy" : "eager"} decoding="async" fetchPriority={compact ? "low" : "high"} onError={(event) => { if (!event.currentTarget.src.endsWith("/logo-frango.webp")) event.currentTarget.src = "/logo-frango.webp"; }} /></div>;
+  const logoUrl = resolveLogo(logoKey === undefined ? remoteLogoKey : logoKey);
+  return <div className={`brand-mark ${compact ? "brand-mark--compact" : ""}`}><img className="brand-mark__image" src={mediaVariantUrl(logoUrl, 96)} srcSet={mediaSrcSet(logoUrl, [96, 160])} sizes="42px" alt="Crazy Chicken" width={42} height={42} loading={compact ? "lazy" : "eager"} decoding="async" fetchPriority={compact ? "low" : "high"} onError={(event) => { event.currentTarget.removeAttribute("srcset"); if (!event.currentTarget.src.endsWith("/logo-frango.webp")) event.currentTarget.src = "/logo-frango.webp"; }} /></div>;
 }

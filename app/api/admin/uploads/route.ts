@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!imageType) return Response.json({ error: "O conteúdo precisa ser uma imagem PNG, JPG ou WEBP válida." }, { status: 400 });
     let optimizedBytes: Uint8Array;
     try {
-      optimizedBytes = await optimizeUploadedImage(bytes);
+      optimizedBytes = await optimizeUploadedImage(bytes, scope === "products" ? "product" : "display");
     } catch (error) {
       console.warn("upload-image-optimization-failed", error instanceof Error ? error.message : "unknown-error");
       return Response.json({ error: "Não foi possível processar esta imagem. Tente exportá-la novamente como JPG, PNG ou WEBP." }, { status: 400 });

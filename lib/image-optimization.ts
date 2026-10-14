@@ -1,18 +1,23 @@
 import sharp from "sharp";
 
-const MAX_IMAGE_WIDTH = 2000;
-const MAX_IMAGE_HEIGHT = 1600;
+type ImagePreset = "display" | "product";
 
-export async function optimizeUploadedImage(bytes: Uint8Array) {
+const imagePresets: Record<ImagePreset, { width: number; height: number; quality: number }> = {
+  display: { width: 1920, height: 1600, quality: 80 },
+  product: { width: 1200, height: 1200, quality: 78 },
+};
+
+export async function optimizeUploadedImage(bytes: Uint8Array, preset: ImagePreset = "display") {
+  const settings = imagePresets[preset];
   const optimized = await sharp(Buffer.from(bytes), { failOn: "error", limitInputPixels: 20_000_000 })
     .rotate()
     .resize({
-      width: MAX_IMAGE_WIDTH,
-      height: MAX_IMAGE_HEIGHT,
+      width: settings.width,
+      height: settings.height,
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: 82, effort: 4, smartSubsample: true })
+    .webp({ quality: settings.quality, effort: 4, smartSubsample: true })
     .toBuffer();
 
   return new Uint8Array(optimized);

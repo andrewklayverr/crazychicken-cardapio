@@ -976,3 +976,55 @@ input,textarea,select,button { max-width:100%; box-sizing:border-box; }
   .store-header .brand-mark__copy { display:none; }
   .product-card__add { gap:4px; padding-inline:5px; }
 }
+
+/* Resposta imediata ao toque: evita atraso de clique e hover preso em celulares. */
+.storefront-shell button,
+.storefront-shell a,
+.storefront-shell label[for] {
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(227,33,32,.18);
+}
+.storefront-shell button > svg,
+.storefront-shell button > span > svg,
+.storefront-shell a > svg { pointer-events:none; }
+
+/* Mantém os pontos compactos visualmente, mas amplia a área clicável. */
+.drink-carousel { gap:0; padding:3px 5px; }
+.drink-carousel button,
+.drink-carousel button.active {
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  position:relative;
+  border-radius:999px;
+  background:transparent;
+}
+.drink-carousel button::after {
+  content:"";
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:#ffffff66;
+  transition:width .2s ease,background .2s ease;
+}
+.drink-carousel button.active::after { width:22px; background:var(--yellow); }
+
+@media (hover:none), (pointer:coarse) {
+  .storefront-shell .category-pill { min-height:44px; }
+  .storefront-shell .product-card:hover { box-shadow:none; transform:none; }
+  .storefront-shell .product-card:hover .product-card__image { transform:none; }
+  .storefront-shell .featured-strip__item:hover { border-color:var(--store-line,var(--line)); box-shadow:none; transform:none; }
+  .storefront-shell .product-card__add:hover:not(:disabled) { filter:none; transform:none; }
+  .storefront-shell .hero-banner__cta:hover { background:var(--store-accent); transform:none; }
+  .storefront-shell .drink-carousel__arrow:hover { background:#111111b8; border-color:#ffffff2b; }
+  .storefront-shell .tracking-header-link:hover { border-color:var(--store-line,var(--line)); color:var(--store-text,var(--ink)); }
+  .storefront-shell .mobile-menu__nav a:hover,
+  .storefront-shell .mobile-menu__nav button:hover { color:var(--store-text,var(--ink)); }
+  .storefront-shell button:not(:disabled):active,
+  .storefront-shell a:active { filter:brightness(.92); }
+  .storefront-shell .product-card__add:not(:disabled):active,
+  .storefront-shell .hero-banner__cta:active,
+  .storefront-shell .featured-strip__item:not(:disabled):active,
+  .storefront-shell .tracking-header-link:active { transform:scale(.98); }
+}
